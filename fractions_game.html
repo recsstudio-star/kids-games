@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра с дробями</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .back-to-menu-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255,107,107,0.3);
+            z-index: 1000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .back-to-menu-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255,107,107,0.4);
+        }
+        .instructions {
+            background: rgba(255,255,255,0.1);
+            padding: 15px 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            font-size: 1.1em;
+        }
+        
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+        
+        .square-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            border: 4px solid white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            background: white;
+        }
+        
+        .fraction-part {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .fraction-part:hover {
+            filter: brightness(1.2);
+            transform: scale(1.02);
+            z-index: 10;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 12px 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255,107,107,0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,107,107,0.4);
+        }
+        
+        .info-panel {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+            min-width: 300px;
+        }
+        
+        .current-division {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+        
+        .parts-count {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔢 Игра с дробями 🔢</h1>
+    <button class="back-to-menu-button" onclick="goBackToMenu()">
+        🏠 Назад к меню
+    </button>
+    <div class="instructions">
+        Кликните на любую часть квадрата, чтобы разрезать её пополам!<br>
+        Каждая часть показывает свою дробь от целого квадрата.
+    </div>
+    
+    <div class="game-container">
+        <div class="square-container" id="square">
+        </div>
+        
+        <div class="info-panel">
+            <div class="current-division" id="currentDivision">Текущее деление: 1/1</div>
+            <div class="parts-count" id="partsCount">Частей: 1</div>
+        </div>
+        
+        <div class="controls">
+            <button onclick="resetGame()">🔄 Сброс</button>
+            <button onclick="divideAll()">✂️ Разрезать все</button>
+            <button onclick="randomColors()">🎨 Новые цвета</button>
+        </div>
+    </div>
+
+    <script>
+        let parts = [];
+        let colors = [
+            '#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7',
+            '#dda0dd', '#98d8c8', '#f7dc6f', '#bb8fce', '#85c1e9',
+            '#f8c471', '#82e0aa', '#f1948a', '#85929e', '#a9dfbf'
+        ];
+        let colorIndex = 0;
+        function goBackToMenu() {
+            window.location.href = 'index.html'; // Замените на имя файла вашего меню
+        }
+        function getNextColor() {
+            const color = colors[colorIndex % colors.length];
+            colorIndex++;
+            return color;
+        }
+        
+        function createPart(x, y, width, height, denominator) {
+            return {
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+                denominator: denominator,
+                color: getNextColor(),
+                id: Date.now() + Math.random()
+            };
+        }
+        
+        function initGame() {
+            parts = [createPart(0, 0, 400, 400, 1)];
+            colorIndex = 0;
+            renderParts();
+            updateInfo();
+        }
+        
+        function renderParts() {
+            const square = document.getElementById('square');
+            square.innerHTML = '';
+            
+            parts.forEach((part, index) => {
+                const div = document.createElement('div');
+                div.className = 'fraction-part';
+                div.style.left = part.x + 'px';
+                div.style.top = part.y + 'px';
+                div.style.width = part.width + 'px';
+                div.style.height = part.height + 'px';
+                div.style.backgroundColor = part.color;
+                div.innerHTML = `<span>1/${part.denominator}</span>`;
+                
+                div.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dividePart(index);
+                });
+                
+                square.appendChild(div);
+            });
+        }
+        
+        function dividePart(partIndex) {
+            const part = parts[partIndex];
+            const newDenominator = part.denominator * 2;
+            
+            // Определяем направление разреза (по горизонтали или вертикали)
+            const divideVertically = part.width >= part.height;
+            
+            let newPart1, newPart2;
+            
+            if (divideVertically) {
+                // Вертикальный разрез
+                const newWidth = part.width / 2;
+                newPart1 = createPart(part.x, part.y, newWidth, part.height, newDenominator);
+                newPart2 = createPart(part.x + newWidth, part.y, newWidth, part.height, newDenominator);
+            } else {
+                // Горизонтальный разрез
+                const newHeight = part.height / 2;
+                newPart1 = createPart(part.x, part.y, part.width, newHeight, newDenominator);
+                newPart2 = createPart(part.x, part.y + newHeight, part.width, newHeight, newDenominator);
+            }
+            
+            // Заменяем старую часть на две новые
+            parts.splice(partIndex, 1, newPart1, newPart2);
+            
+            renderParts();
+            updateInfo();
+        }
+        
+        function updateInfo() {
+            const maxDenominator = Math.max(...parts.map(p => p.denominator));
+            const totalParts = parts.length;
+            
+            document.getElementById('currentDivision').textContent = 
+                `Наименьшая часть: 1/${maxDenominator}`;
+            document.getElementById('partsCount').textContent = 
+                `Всего частей: ${totalParts}`;
+        }
+        
+        function resetGame() {
+            initGame();
+        }
+        
+        function divideAll() {
+            for (let i = parts.length - 1; i >= 0; i--) {
+                dividePart(i);
+                // Обновляем индексы после каждого деления
+                if (i >= parts.length) i = parts.length - 1;
+            }
+        }
+        
+        function randomColors() {
+            // Перемешиваем массив цветов
+            for (let i = colors.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [colors[i], colors[j]] = [colors[j], colors[i]];
+            }
+            
+            // Применяем новые цвета к существующим частям
+            parts.forEach(part => {
+                part.color = getNextColor();
+            });
+            
+            renderParts();
+        }
+        
+        // Инициализация игры
+        initGame();
+    </script>
+</body>
+</html>

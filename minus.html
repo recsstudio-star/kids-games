@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Поделись мандаринами</title>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', cursive;
+            background: #fff9f0;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+            user-select: none;
+        }
+        .header {
+            margin-bottom: 20px;
+        }
+        .task {
+            font-size: 24px;
+            color: #e67e22;
+            margin-bottom: 10px;
+        }
+        .equation {
+            font-size: 32px;
+            color: #2ecc71;
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .game-area {
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-start;
+            margin: 20px auto;
+            max-width: 650px;
+            position: relative;
+        }
+        .boy-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 250px;
+        }
+        .boy {
+            width: 100px;
+            height: 150px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center bottom;
+        }
+        .boy-info {
+            margin: 10px 0;
+            width: 100%;
+        }
+        .boy-name {
+            font-size: 20px;
+            color: #3498db;
+            font-weight: bold;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        .counter {
+            font-size: 18px;
+            color: #9b59b6;
+            display: inline-block;
+        }
+        .fruits-box {
+            width: 220px;
+            min-height: 120px;
+            background: rgba(255, 204, 128, 0.3);
+            border: 2px dashed #e67e22;
+            border-radius: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-content: flex-start;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .basket-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 20px;
+            align-self: center;
+        }
+        .basket {
+            width: 140px;
+            height: 90px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 90"><path d="M10 10 L130 10 L120 70 L20 70 Z" fill="%23ffcc80" stroke="%23e67c22" stroke-width="3"/></svg>') no-repeat;
+            position: relative;
+            margin-bottom: 10px;
+        }
+        .basket-highlight {
+            position: absolute;
+            width: 150px;
+            height: 100px;
+            border: 3px dashed #4CAF50;
+            border-radius: 5px;
+            top: -5px;
+            left: -5px;
+            display: none;
+        }
+        .fruit {
+            font-size: 30px;
+            margin: 5px;
+            cursor: grab;
+            transition: all 0.2s;
+        }
+        .fruit:active {
+            cursor: grabbing;
+            transform: scale(1.2);
+        }
+        .arrow {
+            width: 60px;
+            height: 40px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40"><path d="M10 20 L50 20 M45 15 L50 20 L45 25" stroke="%23e74c3c" stroke-width="3" fill="none"/></svg>') no-repeat center;
+            margin-top: 80px;
+        }
+        .result {
+            font-size: 40px;
+            color: #e91e63;
+            margin: 20px 0;
+            min-height: 50px;
+        }
+        .next-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 18px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+        .next-btn:hover {
+            background: #2980b9;
+        }
+	.back-to-menu-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255,107,107,0.3);
+            z-index: 1000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .back-to-menu-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255,107,107,0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="task" id="task">Саша делится мандаринами с Петей</div>
+        <div class="equation">
+            <span id="num1">5</span> - <span id="num2">2</span> = <span id="result">?</span>
+        </div>
+    </div>
+    <button class="back-to-menu-button" onclick="goBackToMenu()">
+        🏠 Назад к меню
+    </button>
+    <div class="game-area">
+        <div class="boy-container">
+            <div class="boy" id="boy1-img"></div>
+            <div class="boy-info">
+                <span class="boy-name" id="boy1-name">Саша</span>
+                <span class="counter">Осталось: <span id="counter1">5</span></span>
+            </div>
+            <div class="fruits-box" id="fruits-box1"></div>
+        </div>
+        
+        <div class="arrow"></div>
+        
+        <div class="basket-container">
+            <div class="basket" id="basket">
+                <div class="basket-highlight" id="basket-highlight"></div>
+            </div>
+            <div class="boy-info">
+                <span class="boy-name" id="boy2-name">Петя</span>
+                <span class="counter">Получил: <span id="counter2">0</span></span>
+            </div>
+        </div>
+        
+        <div class="boy-container">
+            <div class="boy" id="boy2-img"></div>
+        </div>
+    </div>
+    
+    <div class="result" id="result-display"></div>
+    
+    <button class="next-btn" id="next-btn">Следующий пример</button>
+
+    <script>
+        // Мальчики и их изображения
+        const boys = [
+            { name: "Саша", img: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><circle cx="50" cy="30" r="20" fill="%23f1c40f"/><path d="M50 50 L50 100 M30 70 L70 70 M40 120 L30 140 M60 120 L70 140" stroke="%232c3e50" stroke-width="3" fill="none"/></svg>' },
+            { name: "Петя", img: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><circle cx="50" cy="30" r="20" fill="%23e67e22"/><path d="M50 50 L50 100 M30 70 L70 70 M40 120 L30 140 M60 120 L70 140" stroke="%232c3e50" stroke-width="3" fill="none"/></svg>' },
+            { name: "Ваня", img: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><circle cx="50" cy="30" r="20" fill="%232ecc71"/><path d="M50 50 L50 100 M30 70 L70 70 M40 120 L30 140 M60 120 L70 140" stroke="%232c3e50" stroke-width="3" fill="none"/></svg>' },
+            { name: "Дима", img: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 150"><circle cx="50" cy="30" r="20" fill="%239b59b6"/><path d="M50 50 L50 100 M30 70 L70 70 M40 120 L30 140 M60 120 L70 140" stroke="%232c3e50" stroke-width="3" fill="none"/></svg>' }
+        ];
+
+        // Игровые переменные
+        let totalFruits = 0;
+        let fruitsToGive = 0;
+        let givenFruits = 0;
+        let currentBoy1 = 0, currentBoy2 = 1;
+        let isDragging = false;
+        
+        // Элементы DOM
+        const taskElement = document.getElementById('task');
+        const num1Element = document.getElementById('num1');
+        const num2Element = document.getElementById('num2');
+        const resultElement = document.getElementById('result');
+        const resultDisplay = document.getElementById('result-display');
+        const nextBtn = document.getElementById('next-btn');
+        const boy1Img = document.getElementById('boy1-img');
+        const boy2Img = document.getElementById('boy2-img');
+        const boy1Name = document.getElementById('boy1-name');
+        const boy2Name = document.getElementById('boy2-name');
+        const fruitsBox1 = document.getElementById('fruits-box1');
+        const basket = document.getElementById('basket');
+        const basketHighlight = document.getElementById('basket-highlight');
+        const counter1 = document.getElementById('counter1');
+        const counter2 = document.getElementById('counter2');
+
+        // Начало игры
+        function startGame() {
+            generateProblem();
+        }
+
+        // Генерация нового примера
+        function generateProblem() {
+            // Выбираем случайных мальчиков
+            currentBoy1 = Math.floor(Math.random() * boys.length);
+            do {
+                currentBoy2 = Math.floor(Math.random() * boys.length);
+            } while (currentBoy2 === currentBoy1);
+            
+            // Случайные числа (от 5 до 10 и от 2 до n-2)
+            totalFruits = Math.floor(Math.random() * 6) + 5;
+            fruitsToGive = Math.floor(Math.random() * (totalFruits - 3)) + 2;
+            
+            // Обновляем интерфейс
+            updateNames();
+            num1Element.textContent = totalFruits;
+            num2Element.textContent = fruitsToGive;
+            resultElement.textContent = '?';
+            resultDisplay.textContent = '';
+            counter1.textContent = totalFruits;
+            counter2.textContent = '0';
+            
+            // Создаем фрукты
+            createFruits();
+            
+            givenFruits = 0;
+        }
+
+        // Обновление имен мальчиков
+        function updateNames() {
+            const boy1 = boys[currentBoy1];
+            const boy2 = boys[currentBoy2];
+            
+            boy1Name.textContent = boy1.name;
+            boy2Name.textContent = boy2.name;
+            boy1Img.style.backgroundImage = `url('${boy1.img}')`;
+            boy2Img.style.backgroundImage = `url('${boy2.img}')`;
+            
+            taskElement.textContent = `${boy1.name} делится мандаринами с ${boy2.name}`;
+        }
+
+        // Создание фруктов
+        function createFruits() {
+            fruitsBox1.innerHTML = '';
+            basket.innerHTML = '';
+            basket.appendChild(basketHighlight);
+            
+            for (let i = 0; i < totalFruits; i++) {
+                const fruit = document.createElement('div');
+                fruit.className = 'fruit';
+                fruit.innerHTML = '🍊';
+                fruit.draggable = true;
+                
+                // Назначаем обработчики перетаскивания
+                fruit.addEventListener('dragstart', dragStart);
+                fruit.addEventListener('dragend', dragEnd);
+                
+                fruitsBox1.appendChild(fruit);
+            }
+        }
+
+        // Начало перетаскивания
+        function dragStart(e) {
+            if (givenFruits >= fruitsToGive) {
+                e.preventDefault();
+                return;
+            }
+            
+            isDragging = true;
+            e.target.style.opacity = '0.7';
+            basketHighlight.style.display = 'block';
+            e.dataTransfer.setData('text/plain', e.target.id);
+        }
+
+        // Перетаскивание над корзиной
+        basket.addEventListener('dragover', e => {
+            e.preventDefault();
+            basketHighlight.style.borderColor = '#FF5722';
+        });
+
+        // Уход с корзины
+        basket.addEventListener('dragleave', () => {
+            basketHighlight.style.borderColor = '#4CAF50';
+        });
+
+        // Бросание в корзину
+        basket.addEventListener('drop', e => {
+            e.preventDefault();
+            basketHighlight.style.display = 'none';
+            basketHighlight.style.borderColor = '#4CAF50';
+            
+            if (!isDragging || givenFruits >= fruitsToGive) return;
+            
+            const fruit = document.querySelector('.fruit[style*="opacity: 0.7"]');
+            if (fruit) {
+                // Переносим мандарин в корзину
+                const newFruit = fruit.cloneNode(true);
+                newFruit.style.opacity = '1';
+                newFruit.style.position = 'absolute';
+                newFruit.style.left = `${Math.random() * (basket.offsetWidth - 30)}px`;
+                newFruit.style.top = `${Math.random() * (basket.offsetHeight - 30)}px`;
+                newFruit.draggable = false;
+                basket.appendChild(newFruit);
+                
+                fruit.remove();
+                
+                givenFruits++;
+                counter1.textContent = totalFruits - givenFruits;
+                counter2.textContent = givenFruits;
+                
+                // Проверяем завершение
+                if (givenFruits === fruitsToGive) {
+                    showResult();
+                }
+            }
+            
+            isDragging = false;
+        });
+
+        // Конец перетаскивания (если не в корзину)
+        function dragEnd(e) {
+            if (isDragging) {
+                e.target.style.opacity = '1';
+                basketHighlight.style.display = 'none';
+                isDragging = false;
+            }
+        }
+
+        // Показ результата
+        function showResult() {
+            const answer = totalFruits - fruitsToGive;
+            resultElement.textContent = answer;
+            
+            const boy1 = boys[currentBoy1];
+            const boy2 = boys[currentBoy2];
+            resultDisplay.textContent = `${boy1.name} отдал ${fruitsToGive} мандаринов ${boy2.name}. Осталось ${answer}!`;
+            
+            // Анимация мандаринов в корзине
+            const receivedFruits = basket.querySelectorAll('.fruit');
+            receivedFruits.forEach((fruit, i) => {
+                setTimeout(() => {
+                    fruit.style.transform = 'translateY(-5px)';
+                    setTimeout(() => fruit.style.transform = 'translateY(0)', 200);
+                }, i * 150);
+            });
+        }
+	function goBackToMenu() {
+            window.location.href = 'index.html'; // Замените на имя файла вашего меню
+        }
+        // Кнопка "Следующий пример"
+        nextBtn.addEventListener('click', generateProblem);
+
+        // Запуск игры
+        startGame();
+    </script>
+</body>
+</html>

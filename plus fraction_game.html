@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра: Сложение дробей</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #e0f2fe, #f3e5f5);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-center;
+            margin-bottom: 2rem;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .score {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        .game-board {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+        }
+
+        .game-content {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .game-content {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+	.back-to-menu-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255,107,107,0.3);
+            z-index: 1000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .back-to-menu-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255,107,107,0.4);
+        }
+        .section {
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 1rem;
+        }
+
+        .fraction-container {
+            margin-bottom: 1rem;
+        }
+
+        .fraction-value {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .square-grid {
+            display: inline-grid;
+            gap: 2px;
+            margin: 0 auto;
+        }
+
+        .cell {
+            width: 32px;
+            height: 32px;
+            border: 2px solid #666;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .cell.filled {
+            background-color: #2196f3;
+        }
+
+        .cell.empty {
+            background-color: white;
+        }
+
+        .cell.interactive:hover {
+            background-color: #bbdefb;
+        }
+
+        .operator {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #666;
+            margin: 1rem 0;
+        }
+
+        .equals {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #666;
+        }
+
+        .user-answer {
+            color: #2196f3;
+        }
+
+        .buttons {
+            margin-top: 1.5rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn-check {
+            background-color: #4caf50;
+            color: white;
+        }
+
+        .btn-check:hover {
+            background-color: #45a049;
+        }
+
+        .btn-next {
+            background-color: #2196f3;
+            color: white;
+        }
+
+        .btn-next:hover {
+            background-color: #1976d2;
+        }
+
+        .result {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+
+        .result.correct {
+            color: #4caf50;
+        }
+
+        .result.incorrect {
+            color: #f44336;
+        }
+
+        .instructions {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .instructions p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">🧮 Игра: Сложение дробей</h1>
+            <div class="score">Счёт: <span id="score">0</span> из <span id="total">0</span></div>
+        </div>
+	<button class="back-to-menu-button" onclick="goBackToMenu()">
+        🏠 Назад к меню
+    </button>
+        <div class="game-board">
+            <div class="game-content">
+                <!-- Левая часть - пример -->
+                <div class="section">
+                    <h3 class="section-title">Пример:</h3>
+                    
+                    <!-- Первая дробь -->
+                    <div class="fraction-container">
+                        <div class="fraction-value" id="fraction1-display"></div>
+                        <div id="fraction1-square" class="square-grid"></div>
+                    </div>
+
+                    <div class="operator">+</div>
+
+                    <!-- Вторая дробь -->
+                    <div class="fraction-container">
+                        <div class="fraction-value" id="fraction2-display"></div>
+                        <div id="fraction2-square" class="square-grid"></div>
+                    </div>
+                </div>
+
+                <!-- Знак равенства -->
+                <div class="section">
+                    <div class="equals">=</div>
+                </div>
+
+                <!-- Правая часть - ответ пользователя -->
+                <div class="section">
+                    <h3 class="section-title">Ваш ответ:</h3>
+                    
+                    <div class="fraction-container">
+                        <div class="fraction-value" id="answer-display"></div>
+                        <div id="answer-square" class="square-grid"></div>
+                    </div>
+
+                    <div class="buttons">
+                        <div id="check-section">
+                            <button class="btn btn-check" onclick="checkAnswer()">Проверить</button>
+                        </div>
+                        
+                        <div id="result-section" style="display: none;">
+                            <div id="result-text" class="result"></div>
+                            <button class="btn btn-next" onclick="nextProblem()">Следующий пример</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Инструкция -->
+            <div class="instructions">
+                <p>💡 <strong>Как играть:</strong> Посмотрите на пример слева и кликайте по клеткам справа, чтобы закрасить нужное количество для правильного ответа</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentProblem = null;
+        let userAnswer = [];
+        let score = 0;
+        let totalProblems = 0;
+	function goBackToMenu() {
+            window.location.href = 'index.html'; // Замените на имя файла вашего меню
+        }
+        // Функция для упрощения дроби
+        function simplifyFraction(numerator, denominator) {
+            if (numerator === denominator) {
+                return { display: "1", isWhole: true, numerator, denominator };
+            }
+            if (numerator === 0) {
+                return { display: "0", isWhole: true, numerator, denominator };
+            }
+            return { display: `${numerator}/${denominator}`, isWhole: false, numerator, denominator };
+        }
+
+        // Генерация случайной задачи
+        function generateProblem() {
+            const denominators = [2, 3, 4, 6, 8];
+            const denom = denominators[Math.floor(Math.random() * denominators.length)];
+            
+            // Генерируем две дроби с одинаковым знаменателем
+            const num1 = Math.floor(Math.random() * (denom - 1)) + 1;
+            const num2 = Math.floor(Math.random() * (denom - num1)) + 1;
+            
+            currentProblem = {
+                fraction1: { numerator: num1, denominator: denom },
+                fraction2: { numerator: num2, denominator: denom },
+                result: { numerator: num1 + num2, denominator: denom }
+            };
+
+            userAnswer = [];
+            updateDisplay();
+        }
+
+        // Отрисовка квадрата
+        function renderSquare(container, numerator, denominator, isInteractive = false, filledCells = []) {
+            container.innerHTML = '';
+            
+            const totalCells = denominator;
+            let gridCols;
+            
+            // Определяем количество колонок в зависимости от знаменателя
+            if (totalCells === 2) {
+                gridCols = 2;
+            } else if (totalCells === 3) {
+                gridCols = 3;
+            } else if (totalCells === 4) {
+                gridCols = 2;
+            } else if (totalCells === 6) {
+                gridCols = 3;
+            } else if (totalCells === 8) {
+                gridCols = 4;
+            } else {
+                gridCols = Math.ceil(Math.sqrt(totalCells));
+            }
+            
+            container.style.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
+
+            // Создаем точно столько ячеек, сколько указано в знаменателе
+            for (let i = 0; i < totalCells; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                
+                const isFilled = isInteractive ? filledCells.includes(i) : i < numerator;
+                cell.classList.add(isFilled ? 'filled' : 'empty');
+                
+                if (isInteractive) {
+                    cell.classList.add('interactive');
+                    cell.onclick = () => toggleCell(i);
+                }
+                
+                container.appendChild(cell);
+            }
+        }
+
+        // Переключение ячейки
+        function toggleCell(cellIndex) {
+            if (document.getElementById('result-section').style.display !== 'none') return;
+            
+            if (userAnswer.includes(cellIndex)) {
+                userAnswer = userAnswer.filter(i => i !== cellIndex);
+            } else {
+                userAnswer.push(cellIndex);
+            }
+            
+            updateAnswerDisplay();
+        }
+
+        // Обновление отображения
+        function updateDisplay() {
+            if (!currentProblem) return;
+
+            // Отображение первой дроби
+            document.getElementById('fraction1-display').textContent = 
+                simplifyFraction(currentProblem.fraction1.numerator, currentProblem.fraction1.denominator).display;
+            renderSquare(
+                document.getElementById('fraction1-square'), 
+                currentProblem.fraction1.numerator, 
+                currentProblem.fraction1.denominator
+            );
+
+            // Отображение второй дроби
+            document.getElementById('fraction2-display').textContent = 
+                simplifyFraction(currentProblem.fraction2.numerator, currentProblem.fraction2.denominator).display;
+            renderSquare(
+                document.getElementById('fraction2-square'), 
+                currentProblem.fraction2.numerator, 
+                currentProblem.fraction2.denominator
+            );
+
+            // Обновление ответа пользователя
+            updateAnswerDisplay();
+
+            // Скрытие результата
+            document.getElementById('check-section').style.display = 'block';
+            document.getElementById('result-section').style.display = 'none';
+        }
+
+        // Обновление отображения ответа пользователя
+        function updateAnswerDisplay() {
+            if (!currentProblem) return;
+
+            const answerDisplay = document.getElementById('answer-display');
+            
+            if (userAnswer.length === currentProblem.result.denominator) {
+                answerDisplay.innerHTML = `<span class="user-answer">${simplifyFraction(userAnswer.length, currentProblem.result.denominator).display}</span>`;
+            } else {
+                answerDisplay.innerHTML = `<span class="user-answer">${userAnswer.length}</span>/${currentProblem.result.denominator}`;
+            }
+
+            renderSquare(
+                document.getElementById('answer-square'), 
+                0, 
+                currentProblem.result.denominator, 
+                true, 
+                userAnswer
+            );
+        }
+
+        // Проверка ответа
+        function checkAnswer() {
+            if (!currentProblem) return;
+            
+            const correct = userAnswer.length === currentProblem.result.numerator;
+            totalProblems++;
+            
+            if (correct) {
+                score++;
+                document.getElementById('result-text').textContent = '✅ Правильно!';
+                document.getElementById('result-text').className = 'result correct';
+            } else {
+                const correctAnswer = simplifyFraction(currentProblem.result.numerator, currentProblem.result.denominator).display;
+                document.getElementById('result-text').textContent = `❌ Неверно. Правильный ответ: ${correctAnswer}`;
+                document.getElementById('result-text').className = 'result incorrect';
+            }
+            
+            // Обновление счёта
+            document.getElementById('score').textContent = score;
+            document.getElementById('total').textContent = totalProblems;
+            
+            // Показ результата
+            document.getElementById('check-section').style.display = 'none';
+            document.getElementById('result-section').style.display = 'block';
+        }
+
+        // Следующий пример
+        function nextProblem() {
+            generateProblem();
+        }
+
+        // Инициализация игры
+        document.addEventListener('DOMContentLoaded', function() {
+            generateProblem();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Картина по номерам</title>
+<style>
+  :root { --bg: #f7f8fb; --card: #ffffff; --text: #1f2937; --muted:#6b7280; --accent:#6366f1; --ring:#c7d2fe; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji','Segoe UI Emoji'; color: var(--text); background: linear-gradient(135deg,#eef2ff,#f0fdf4); }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+  header { display:flex; gap:16px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  h1 { margin:0; font-size: clamp(20px, 3vw, 28px); }
+  .bar { display:flex; gap:8px; flex-wrap:wrap; }
+  select, button { appearance:none; border:1px solid #e5e7eb; background:var(--card); padding:10px 12px; border-radius:14px; box-shadow: 0 1px 1px rgba(0,0,0,.04); cursor:pointer; }
+  button:hover { background:#fafafa; }
+  .grid { display:grid; grid-template-columns: 320px 1fr; gap:16px; margin-top:16px; }
+  @media (max-width: 900px){ .grid{ grid-template-columns: 1fr; } }
+  .card { background:var(--card); border:1px solid #eef2ff; border-radius:16px; padding:14px; box-shadow: 0 4px 18px rgba(99,102,241,.06); }
+  .palette { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:999px; border:1px solid #e5e7eb; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.04); cursor:pointer; }
+  .chip[data-active="1"] { border-color: var(--accent); outline: 3px solid var(--ring); }
+  .dot { width:20px; height:20px; border-radius:50%; border:1px solid #e5e7eb; }
+  .row { display:flex; align-items:center; justify-content:space-between; margin-top:10px; gap:10px; }
+  .muted { color:var(--muted); font-size: 13px; }
+  .progress { width:100%; height: 8px; background:#e5e7eb; border-radius:99px; overflow:hidden; }
+  .progress > div { height:100%; background:var(--accent); width:0%; transition: width .2s ease; }
+  .canvas { overflow:auto; }
+  svg { display:block; margin:0 auto; max-width:100%; height:auto; background:#fff; border-radius:12px; }
+  .pulse { animation: pulse .8s ease-in-out; }
+  @keyframes pulse{ 0%{ filter: drop-shadow(0 0 0 rgba(99,102,241,0)); } 50%{ filter: drop-shadow(0 0 6px rgba(99,102,241,.6)); } 100%{ filter: drop-shadow(0 0 0 rgba(99,102,241,0)); } }
+  .hint { font-size:12px; }
+.back-to-menu-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255,107,107,0.3);
+            z-index: 1000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .back-to-menu-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255,107,107,0.4);
+        }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Картина по номерам</h1>
+    <div class="bar">
+      <select id="puzzleSelect"></select>
+      <button id="btnReset">Сбросить</button>
+      <button id="btnUndo">Отмена</button>
+      <button id="btnHint">Подсказка</button>
+      <button id="btnSave">Сохранить PNG</button>
+    </div>
+  </header>
+<button class="back-to-menu-button" onclick="goBackToMenu()">
+        🏠 Назад к меню
+    </button>
+  <div class="grid">
+    <aside class="card">
+      <h3 style="margin:6px 0 10px 0">Палитра</h3>
+      <div id="palette" class="palette"></div>
+      <div class="row">
+        <label class="muted"><input type="checkbox" id="chkHighlight" checked> Подсвечивать нужные области</label>
+        <div class="muted">Готово: <span id="progressP">0</span>%</div>
+      </div>
+      <div class="progress" style="margin-top:8px"><div id="progressBar"></div></div>
+      <p class="muted hint" style="margin-top:10px">Выберите номер, затем кликайте по областям с таким же номером. Клик по цифре на рисунке тоже работает.</p>
+    </aside>
+
+    <main class="card canvas">
+      <div id="svgHost"></div>
+    </main>
+  </div>
+</div>
+
+<script>
+function goBackToMenu() {
+            window.location.href = 'index.html'; // Замените на имя файла вашего меню
+        }
+(function(){
+  // ===== ДАННЫЕ ПАЗЛОВ (SVG-области, без внешних картинок) =====
+  const PALETTES = {
+    basic: [
+      { n:1, label:'Красный', color:'#EF4444' },
+      { n:2, label:'Синий', color:'#3B82F6' },
+      { n:3, label:'Жёлтый', color:'#F59E0B' },
+      { n:4, label:'Зелёный', color:'#10B981' },
+      { n:5, label:'Фиолетовый', color:'#8B5CF6' },
+    ],
+    sea: [
+      { n:1, label:'Синий', color:'#3B82F6' },
+      { n:2, label:'Бирюзовый', color:'#06B6D4' },
+      { n:3, label:'Тёмно-синий', color:'#1D4ED8' },
+      { n:4, label:'Жёлтый', color:'#F59E0B' },
+      { n:5, label:'Розовый', color:'#EC4899' },
+    ],
+  };
+	
+  // Ракета
+  const rocketRegions = [
+    { id:'nose', type:'polygon', props:{ points:'150,30 200,90 100,90' }, number:1, textAt:{x:150,y:70} },
+    { id:'body', type:'rect', props:{ x:110, y:90, width:80, height:170, rx:18 }, number:2, textAt:{x:150,y:175} },
+    { id:'ring', type:'circle', props:{ cx:150, cy:150, r:26 }, number:5, textAt:{x:150,y:150} },
+    { id:'win', type:'circle', props:{ cx:150, cy:150, r:18 }, number:3, textAt:{x:150,y:150} },
+    { id:'finL', type:'polygon', props:{ points:'110,200 70,250 110,260' }, number:4, textAt:{x:95,y:240} },
+    { id:'finR', type:'polygon', props:{ points:'190,200 230,250 190,260' }, number:4, textAt:{x:205,y:240} },
+    { id:'fl1', type:'polygon', props:{ points:'150,260 170,320 150,300 130,320' }, number:3, textAt:{x:150,y:305} },
+    { id:'fl2', type:'polygon', props:{ points:'150,260 185,340 150,330 115,340' }, number:1, textAt:{x:150,y:330} },
+    { id:'tail', type:'rect', props:{ x:120, y:260, width:60, height:20, rx:6 }, number:2, textAt:{x:150,y:270} },
+    { id:'s1', type:'rect', props:{ x:110, y:110, width:80, height:10, rx:3 }, number:5, textAt:{x:150,y:117} },
+    { id:'s2', type:'rect', props:{ x:110, y:220, width:80, height:10, rx:3 }, number:5, textAt:{x:150,y:227} },
+  ];
+
+  // Кит
+  const whaleRegions = [
+    { id:'body', type:'path', props:{ d:'M70 220 C60 170, 120 120, 200 140 C250 150, 260 210, 230 230 C200 250, 150 250, 110 240 C90 235, 80 230, 70 220 Z' }, number:1, textAt:{x:160,y:210} },
+    { id:'belly', type:'path', props:{ d:'M110 240 C150 250, 200 250, 230 230 C220 230, 180 230, 140 235 C125 238, 117 240, 110 240 Z' }, number:2, textAt:{x:170,y:238} },
+    { id:'t1', type:'polygon', props:{ points:'70,220 40,200 45,230' }, number:3, textAt:{x:52,y:217} },
+    { id:'t2', type:'polygon', props:{ points:'70,220 40,240 60,238' }, number:3, textAt:{x:52,y:235} },
+    { id:'eye', type:'circle', props:{ cx:195, cy:185, r:6 }, number:5, textAt:{x:195,y:185} },
+    { id:'sp1', type:'path', props:{ d:'M200 140 C195 120, 205 110, 210 130' }, number:4, textAt:{x:205,y:125} },
+    { id:'sp2', type:'path', props:{ d:'M190 135 C180 115, 190 105, 200 125' }, number:4, textAt:{x:192,y:120} },
+  ];
+
+  // Простые вариации, чтобы получить 12 рисунков без тяжёлых ресурсов
+  function cloneWithPalette(id, title, regions, palette){ return { id, title, regions: JSON.parse(JSON.stringify(regions)), palette, viewBox: regions===whaleRegions? '0 0 300 300':'0 0 300 380' }; }
+
+  const PUZZLES = [
+    { id:'rocket', title:'Ракета', regions: rocketRegions, palette: PALETTES.basic, viewBox:'0 0 300 380' },
+    { id:'whale', title:'Кит', regions: whaleRegions, palette: PALETTES.sea, viewBox:'0 0 300 300' },
+    cloneWithPalette('rocket2','Ракета — вечер', rocketRegions, [
+      {n:1,label:'Алый',color:'#f43f5e'},{n:2,label:'Индиго',color:'#6366f1'},{n:3,label:'Золото',color:'#f59e0b'},{n:4,label:'Мята',color:'#34d399'},{n:5,label:'Сирень',color:'#a78bfa'}
+    ]),
+    cloneWithPalette('whale2','Кит — рассвет', whaleRegions, [
+      {n:1,label:'Лазурный',color:'#60a5fa'},{n:2,label:'Бирюза',color:'#22d3ee'},{n:3,label:'Темно‑лазурный',color:'#2563eb'},{n:4,label:'Солнце',color:'#fbbf24'},{n:5,label:'Розовый',color:'#f472b6'}
+    ]),
+    cloneWithPalette('rocket3','Ракета — детская', rocketRegions, PALETTES.basic),
+    cloneWithPalette('whale3','Кит — детская', whaleRegions, PALETTES.sea),
+    cloneWithPalette('rocket4','Ракета — праздник', rocketRegions, [
+      {n:1,label:'Коралловый',color:'#fb7185'},{n:2,label:'Сапфир',color:'#3b82f6'},{n:3,label:'Лимон',color:'#fde047'},{n:4,label:'Лайм',color:'#10b981'},{n:5,label:'Аметист',color:'#8b5cf6'}
+    ]),
+    cloneWithPalette('whale4','Кит — лагуна', whaleRegions, [
+      {n:1,label:'Море',color:'#38bdf8'},{n:2,label:'Волна',color:'#06b6d4'},{n:3,label:'Глубина',color:'#1e40af'},{n:4,label:'Брызги',color:'#f59e0b'},{n:5,label:'Корал',color:'#ec4899'}
+    ]),
+    cloneWithPalette('rocket5','Ракета — ночь', rocketRegions, [
+      {n:1,label:'Малиновый',color:'#e11d48'},{n:2,label:'Синий',color:'#2563eb'},{n:3,label:'Жёлтый',color:'#f59e0b'},{n:4,label:'Зелёный',color:'#22c55e'},{n:5,label:'Фиолетовый',color:'#7c3aed'}
+    ]),
+    cloneWithPalette('whale5','Кит — закат', whaleRegions, [
+      {n:1,label:'Небо',color:'#60a5fa'},{n:2,label:'Морская волна',color:'#14b8a6'},{n:3,label:'Тьма',color:'#1d4ed8'},{n:4,label:'Солнце',color:'#f59e0b'},{n:5,label:'Румянец',color:'#fb7185'}
+    ]),
+    cloneWithPalette('rocket6','Ракета — классика', rocketRegions, PALETTES.basic),
+    cloneWithPalette('whale6','Кит — классика', whaleRegions, PALETTES.sea)
+  ];
+
+  // ===== СОСТОЯНИЕ =====
+  let state = {
+    currentId: 'rocket',
+    fills: {}, // { regionId: number|null }
+    selected: 1,
+    history: [],
+    highlight: true,
+  };
+
+  // ===== UI ЭЛЕМЕНТЫ =====
+  const elSelect = document.getElementById('puzzleSelect');
+  const elPalette = document.getElementById('palette');
+  const elProgressP = document.getElementById('progressP');
+  const elProgressBar = document.getElementById('progressBar');
+  const elSvgHost = document.getElementById('svgHost');
+  const elReset = document.getElementById('btnReset');
+  const elUndo = document.getElementById('btnUndo');
+  const elHint = document.getElementById('btnHint');
+  const elSave = document.getElementById('btnSave');
+  const elHighlight = document.getElementById('chkHighlight');
+
+  // ===== ИНИЦИАЛИЗАЦИЯ (мгновенно, без сторонних библиотек) =====
+  function byId(id){ return PUZZLES.find(p=>p.id===id); }
+
+  function initSelect(){
+    elSelect.innerHTML = PUZZLES.map(p=>`<option value="${p.id}">${p.title}</option>`).join('');
+    elSelect.value = state.currentId;
+    elSelect.addEventListener('change', ()=>{ switchPuzzle(elSelect.value); });
+  }
+
+  function switchPuzzle(id){
+    state.currentId = id;
+    const p = byId(id);
+    state.selected = p.palette[0].n;
+    state.fills = Object.fromEntries(p.regions.map(r=>[r.id,null]));
+    state.history = [];
+    renderPalette();
+    renderSVG();
+    updateProgress();
+  }
+
+  function renderPalette(){
+    const p = byId(state.currentId);
+    elPalette.innerHTML = '';
+    p.palette.forEach((item)=>{
+      const btn = document.createElement('button');
+      btn.className = 'chip';
+      btn.dataset.active = String(state.selected===item.n?1:0);
+      btn.title = `Номер ${item.n}`;
+      btn.innerHTML = `<span class="dot" style="background:${item.color}"></span><strong>${item.n}</strong><span class="muted">${item.label}</span>`;
+      btn.addEventListener('click', ()=>{ state.selected=item.n; renderPalette(); });
+      elPalette.appendChild(btn);
+    });
+  }
+
+  function renderSVG(){
+    const p = byId(state.currentId);
+    const svgNS = 'http://www.w3.org/2000/svg';
+    elSvgHost.innerHTML='';
+    const svg = document.createElementNS(svgNS,'svg');
+    svg.setAttribute('viewBox', p.viewBox);
+
+    const bg = document.createElementNS(svgNS,'rect');
+    const vb = p.viewBox.split(' ').map(Number); // x y w h
+    bg.setAttribute('x', String(vb[0])); bg.setAttribute('y', String(vb[1]));
+    bg.setAttribute('width', String(vb[2])); bg.setAttribute('height', String(vb[3]));
+    bg.setAttribute('fill', '#ffffff');
+    svg.appendChild(bg);
+
+    p.regions.forEach((r)=>{
+      const filled = state.fills[r.id];
+      const target = r.number===state.selected && state.highlight && filled==null;
+
+      const el = document.createElementNS(svgNS, r.type);
+      Object.entries(r.props).forEach(([k,v])=> el.setAttribute(k,String(v)));
+      el.setAttribute('fill', filled? paletteColor(p, filled): '#FFFFFF');
+      el.setAttribute('stroke', target? '#f97316':'#1f2937');
+      el.setAttribute('stroke-width','2');
+      if (target) el.setAttribute('stroke-dasharray','4 3');
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', ()=> handleClick(r.id, r.number));
+      svg.appendChild(el);
+
+      if (filled==null){
+        const t = document.createElementNS(svgNS,'text');
+        t.setAttribute('x', String(r.textAt.x));
+        t.setAttribute('y', String(r.textAt.y));
+        t.setAttribute('text-anchor','middle');
+        t.setAttribute('dominant-baseline','middle');
+        t.setAttribute('font-size','14');
+        t.setAttribute('fill','#6b7280');
+        t.dataset.number = String(r.number);
+        t.style.cursor='pointer';
+        // ВАЖНО: клик по цифре тоже закрашивает (исправление бага)
+        t.addEventListener('click', ()=> handleClick(r.id, r.number));
+        svg.appendChild(t);
+        t.textContent = String(r.number);
+      }
+    });
+
+    elSvgHost.appendChild(svg);
+  }
+
+  function paletteColor(puzzle, num){
+    const it = puzzle.palette.find(x=>x.n===num); return it? it.color : '#FFFFFF';
+  }
+
+  function handleClick(regionId, number){
+    const p = byId(state.currentId);
+    if (state.selected === number){
+      // push history snapshot
+      state.history.push({ ...state.fills }); if (state.history.length>50) state.history.shift();
+      state.fills[regionId] = state.selected;
+      renderSVG();
+      updateProgress();
+    } else {
+      // краткая пульсация рамки выбранной области — найдём эл-т по id
+      const svg = elSvgHost.querySelector('svg');
+      if (!svg) return;
+      const idx = p.regions.findIndex(r=>r.id===regionId);
+      const el = svg.children[idx+1]; // +1 из‑за bg
+      if (el){ el.classList.add('pulse'); setTimeout(()=>el.classList.remove('pulse'), 500); }
+    }
+  }
+
+  function updateProgress(){
+    const p = byId(state.currentId);
+    const total = p.regions.length;
+    const done = Object.values(state.fills).filter(v=>v!=null).length;
+    const pr = Math.round(done/total*100);
+    elProgressP.textContent = String(pr);
+    elProgressBar.style.width = pr + '%';
+  }
+
+  // ===== ДЕЙСТВИЯ =====
+  elReset.addEventListener('click', ()=> switchPuzzle(state.currentId));
+  elUndo.addEventListener('click', ()=>{
+    if (state.history.length){
+      state.fills = state.history.pop();
+      renderSVG();
+      updateProgress();
+    }
+  });
+  elHint.addEventListener('click', ()=>{
+    const p = byId(state.currentId);
+    const target = p.regions.find(r=> r.number===state.selected && state.fills[r.id]==null);
+    if (!target) return;
+    const svg = elSvgHost.querySelector('svg');
+    if (!svg) return;
+    // Найти элемент региона
+    const idx = p.regions.findIndex(r=>r.id===target.id);
+    const el = svg.children[idx+1]; // +1 из‑за bg
+    if (el){ el.classList.add('pulse'); setTimeout(()=>el.classList.remove('pulse'), 800); }
+  });
+  elHighlight.addEventListener('change', ()=>{ state.highlight = elHighlight.checked; renderSVG(); });
+
+  // Экспорт PNG
+  elSave.addEventListener('click', async()=>{
+    const svg = elSvgHost.querySelector('svg'); if (!svg) return;
+    const clone = svg.cloneNode(true);
+    // Скрыть цифры для чистого арта
+    clone.querySelectorAll('text').forEach(t=> t.remove());
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(clone);
+    const blob = new Blob([svgStr], {type:'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    await new Promise(res=>{ img.onload=()=>res(); img.src=url; });
+
+    // Размер по viewBox
+    const [vx,vy,vw,vh] = svg.getAttribute('viewBox').split(' ').map(Number);
+    const canvas = document.createElement('canvas');
+    canvas.width = vw; canvas.height = vh;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img,0,0);
+    URL.revokeObjectURL(url);
+
+    const png = canvas.toDataURL('image/png');
+    const a = document.createElement('a'); a.href = png; a.download = (byId(state.currentId).title||'art')+'.png'; a.click();
+  });
+
+  // Старт
+  initSelect();
+  switchPuzzle(state.currentId);
+})();
+</script>
+</body>
+</html>

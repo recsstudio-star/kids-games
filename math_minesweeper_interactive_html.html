@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Математический Сапёр — тренировка мышления</title>
+  <style>
+    :root{--cell-size:44px;--gap:6px}
+    body{font-family:Inter,Segoe UI,Roboto,Arial;display:flex;flex-direction:column;align-items:center;padding:18px;background:#f3f6fb;color:#0b1220}
+    h1{margin:6px 0 14px;font-size:20px}
+.back-to-menu-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255,107,107,0.3);
+            z-index: 1000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .back-to-menu-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255,107,107,0.4);
+        }
+    .controls{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+    select,input[type=checkbox]{padding:6px;border-radius:6px;border:1px solid #cbd5e1}
+    button{padding:8px 12px;border-radius:8px;border:0;background:#0b63d8;color:white;cursor:pointer}
+    button:active{transform:translateY(1px)}
+    .status{display:flex;gap:14px;align-items:center;margin-left:8px}
+    .board{display:grid;gap:var(--gap);background:linear-gradient(180deg,#e6eefc,#ffffff);padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(12,38,82,0.06)}
+    .cell{width:var(--cell-size);height:var(--cell-size);display:flex;align-items:center;justify-content:center;background:#dbe9ff;border-radius:6px;cursor:pointer;user-select:none;font-weight:700}
+    .cell.hidden{background:#c8d7f7}
+    .cell.revealed{background:#fff;border:1px solid rgba(0,0,0,0.06);cursor:default}
+    .cell.flag{background:#ffdede;color:#b22}
+    .cell.mine{background:#ffdddd;color:#7a0000}
+    .num-1{color:#2b8a3e}
+    .num-2{color:#1f6fb8}
+    .num-3{color:#c53d3d}
+    .num-4{color:#6b2f8f}
+    .significant{box-shadow:0 0 10px rgba(255,205,0,0.25);transform:scale(1.04)}
+    .help{font-size:13px;color:#475569;margin-top:10px}
+    footer{margin-top:14px;font-size:12px;color:#697b8a}
+    @media (max-width:520px){:root{--cell-size:36px;--gap:4px} .controls{flex-direction:column;align-items:stretch}}
+  </style>
+</head>
+<body>
+  <h1>Математический Сапёр — тренировка логики</h1>
+<button class="back-to-menu-button" onclick="goBackToMenu()">
+        🏠 Назад к меню
+    </button>
+  <div class="controls">
+    <label>Уровень:
+      <select id="difficulty">
+        <option value="easy">Лёгкий (8×8, 10 мин)</option>
+        <option value="medium">Средний (12×12, 20 мин)</option>
+        <option value="hard">Сложный (16×16, 40 мин)</option>
+        <option value="custom">Пользовательский</option>
+      </select>
+    </label>
+    <label id="custom-fields" style="display:none">Ширина: <input id="w" type="number" min="5" max="24" value="10" style="width:60px"/> Высота: <input id="h" type="number" min="5" max="24" value="10" style="width:60px"/> Мины: <input id="m" type="number" min="1" max="400" value="15" style="width:70px"/></label>
+
+    <button id="newGame">Новая игра</button>
+
+    <label style="margin-left:8px">Режим подсказки:
+      <select id="hintMode">
+        <option value="none">Отключён</option>
+        <option value="allnonzero" selected>Показывать все ненулевые числа</option>
+        <option value="significant">Показывать значимые (1 и максимальные)</option>
+      </select>
+    </label>
+
+    <div class="status">
+      <div>Мины: <span id="remaining">0</span></div>
+      <div>Время: <span id="time">00:00</span></div>
+    </div>
+  </div>
+
+  <div id="boardContainer"></div>
+  <div class="help">ПК/ноут: левый клик — открыть, правый клик — пометить флагом (или длинный тап на мобильных). На уровне "подсказка" значимые цифры подсвечены для тренировки.</div>
+  <footer>Сделано для развития математического мышления — режим подсказки помогает анализировать соседние клетки.</footer>
+
+<script>
+// Конфигурация уровней
+const LEVELS = {
+  easy: {w:8,h:8,m:10},
+  medium: {w:12,h:12,m:20},
+  hard: {w:16,h:16,m:40}
+};
+
+let state = {
+  w:10,h:10,m:15,board:[],revealed:0,flags:0,running:false,timer:null,seconds:0
+};
+
+const boardContainer = document.getElementById('boardContainer');
+const difficulty = document.getElementById('difficulty');
+const newGameBtn = document.getElementById('newGame');
+const remainingEl = document.getElementById('remaining');
+const timeEl = document.getElementById('time');
+const hintMode = document.getElementById('hintMode');
+const customFields = document.getElementById('custom-fields');
+
+difficulty.addEventListener('change',()=>{
+  if(difficulty.value==='custom') customFields.style.display='inline-block';
+  else customFields.style.display='none';
+});
+
+newGameBtn.addEventListener('click',startGame);
+function goBackToMenu() {
+            window.location.href = 'index.html'; // Замените на имя файла вашего меню
+        }
+function startTimer(){
+  stopTimer();
+  state.running=true; state.seconds=0; timeEl.textContent='00:00';
+  state.timer = setInterval(()=>{state.seconds++; timeEl.textContent = formatTime(state.seconds)},1000);
+}
+function stopTimer(){ if(state.timer) clearInterval(state.timer); state.timer=null; state.running=false }
+function formatTime(s){ const m=Math.floor(s/60); const sec=s%60; return `${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}` }
+
+function startGame(){
+  stopTimer();
+  const lvl = difficulty.value;
+  if(lvl==='custom'){
+    const w = parseInt(document.getElementById('w').value,10)||10;
+    const h = parseInt(document.getElementById('h').value,10)||10;
+    let m = parseInt(document.getElementById('m').value,10)||15;
+    m = Math.min(m, w*h-1);
+    state.w=w; state.h=h; state.m=m;
+  } else {
+    const cfg = LEVELS[lvl]; state.w=cfg.w; state.h=cfg.h; state.m=cfg.m;
+  }
+  state.board = Array(state.h).fill(0).map(()=>Array(state.w).fill(0));
+  state.revealed=0; state.flags=0; state.seconds=0;
+  remainingEl.textContent = state.m;
+  buildBoard();
+  startTimer();
+}
+
+function buildBoard(){
+  // place mines
+  const cells = state.w * state.h;
+  const mines = state.m;
+  const flat = Array(cells).fill(0).map((_,i)=>i);
+  // shuffle and pick mines
+  for(let i=flat.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [flat[i],flat[j]]=[flat[j],flat[i]] }
+  const mineSet = new Set(flat.slice(0,mines));
+  // construct board objects
+  const board = [];
+  for(let r=0;r<state.h;r++){
+    const row =[];
+    for(let c=0;c<state.w;c++){
+      const idx = r*state.w+c;
+      row.push({mine: mineSet.has(idx),adj:0, revealed:false, flagged:false});
+    }
+    board.push(row);
+  }
+  // compute adjacent
+  for(let r=0;r<state.h;r++){
+    for(let c=0;c<state.w;c++){
+      if(board[r][c].mine) continue;
+      let cnt=0;
+      for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+        if(dr===0 && dc===0) continue;
+        const nr=r+dr, nc=c+dc;
+        if(nr>=0 && nr<state.h && nc>=0 && nc<state.w && board[nr][nc].mine) cnt++;
+      }
+      board[r][c].adj = cnt;
+    }
+  }
+  state.board = board;
+  renderBoard();
+}
+
+function renderBoard(){
+  boardContainer.innerHTML = '';
+  boardContainer.className = 'board';
+  boardContainer.style.gridTemplateColumns = `repeat(${state.w}, ${getComputedStyle(document.documentElement).getPropertyValue('--cell-size') || '44px'})`;
+  // set size custom via CSS variable
+  boardContainer.style.setProperty('--cell-size', getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
+  // create cells
+  const flat = [];
+  for(let r=0;r<state.h;r++){
+    for(let c=0;c<state.w;c++){
+      const cell = document.createElement('div');
+      cell.className = 'cell hidden';
+      cell.dataset.r=r; cell.dataset.c=c;
+      cell.oncontextmenu = (e)=>{ e.preventDefault(); toggleFlag(r,c); }
+      cell.addEventListener('click', ()=> onReveal(r,c));
+      // mobile long-press support
+      let pressTimer = null;
+      cell.addEventListener('touchstart', (e)=>{ pressTimer = setTimeout(()=>{ toggleFlag(r,c)},600); });
+      cell.addEventListener('touchend', (e)=>{ if(pressTimer) clearTimeout(pressTimer); });
+      flat.push(cell);
+      boardContainer.appendChild(cell);
+    }
+  }
+  applyHints();
+}
+
+function applyHints(){
+  const mode = hintMode.value;
+  // compute max adjacent number on board
+  let maxAdj = 0;
+  for(let r=0;r<state.h;r++) for(let c=0;c<state.w;c++) maxAdj = Math.max(maxAdj, state.board[r][c].adj);
+
+  for(let r=0;r<state.h;r++){
+    for(let c=0;c<state.w;c++){
+      const cellEl = getCellEl(r,c);
+      cellEl.className = 'cell hidden';
+      const cell = state.board[r][c];
+      if(mode==='none') continue;
+      if(cell.mine) continue;
+      if(mode==='allnonzero' && cell.adj>0){
+        cellEl.classList.add('revealed');
+        cellEl.classList.remove('hidden');
+        cellEl.innerHTML = `<span class="num-${cell.adj}">${cell.adj}</span>`;
+      }
+      if(mode==='significant'){
+        if(cell.adj===1 || cell.adj===maxAdj){
+          cellEl.classList.add('revealed','significant');
+          cellEl.classList.remove('hidden');
+          cellEl.innerHTML = `<span class="num-${cell.adj}">${cell.adj}</span>`;
+        }
+      }
+    }
+  }
+}
+
+hintMode.addEventListener('change', ()=>{ applyHints(); });
+
+function getCellEl(r,c){ const idx = r*state.w + c; return boardContainer.children[idx]; }
+
+function toggleFlag(r,c){ const cell = state.board[r][c]; if(cell.revealed) return; cell.flagged = !cell.flagged; const el = getCellEl(r,c);
+  if(cell.flagged){ el.classList.add('flag'); el.classList.remove('hidden'); el.textContent='⚑'; state.flags++; }
+  else { el.classList.remove('flag'); el.classList.add('hidden'); el.textContent=''; state.flags--; }
+  remainingEl.textContent = Math.max(0, state.m - state.flags);
+}
+
+function onReveal(r,c){ const cell = state.board[r][c]; if(cell.flagged || cell.revealed) return; if(!state.running) startTimer();
+  if(cell.mine){ revealAllMines(); stopTimer(); alert('Игра окончена — вы подорвались. Попробуйте снова.'); return; }
+  floodReveal(r,c);
+  checkWin();
+}
+
+function revealAllMines(){ for(let r=0;r<state.h;r++) for(let c=0;c<state.w;c++){ const cell=state.board[r][c]; const el=getCellEl(r,c); if(cell.mine){ el.classList.remove('hidden'); el.classList.add('revealed','mine'); el.textContent='💣' } }}
+
+function floodReveal(sr,sc){ const stack=[[sr,sc]]; while(stack.length){ const [r,c]=stack.pop(); const cell=state.board[r][c]; const el = getCellEl(r,c);
+    if(cell.revealed || cell.flagged) continue;
+    cell.revealed=true; el.classList.remove('hidden'); el.classList.add('revealed');
+    if(cell.adj>0){ el.innerHTML = `<span class="num-${cell.adj}">${cell.adj}</span>`; }
+    state.revealed++;
+    if(cell.adj===0){ for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++){
+      const nr=r+dr, nc=c+dc; if(nr<0||nc<0||nr>=state.h||nc>=state.w) continue; const n=state.board[nr][nc]; if(!n.revealed && !n.mine) stack.push([nr,nc]);
+    }}
+  }
+}
+
+function checkWin(){
+  const total = state.w*state.h;
+  if(state.revealed === total - state.m){ stopTimer(); setTimeout(()=>{ alert('Поздравляю — вы решили поле!'); },50); }
+}
+
+// initialize
+startGame();
+
+// prevent context menu on board
+boardContainer.addEventListener('contextmenu', e=>e.preventDefault());
+</script>
+</body>
+</html>

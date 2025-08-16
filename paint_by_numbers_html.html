@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Картины по номерам - Детская игра</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd, #f8bbd9, #e1f5fe);
+            min-height: 100vh;
+            padding: 20px;
+            user-select: none;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+	.back-to-menu-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255,107,107,0.3);
+            z-index: 1000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .back-to-menu-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255,107,107,0.4);
+        }
+        .main-title {
+            font-size: 3rem;
+            color: #6a1b9a;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #7b1fa2;
+        }
+
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .template-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .template-card:hover {
+            transform: translateY(-5px);
+            border-color: #9c27b0;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+
+        .template-emoji {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .template-name {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #6a1b9a;
+            margin-bottom: 15px;
+        }
+
+        .template-preview {
+            display: grid;
+            gap: 1px;
+            max-width: 120px;
+            margin: 0 auto;
+        }
+
+        .preview-cell {
+            aspect-ratio: 1;
+            border-radius: 2px;
+        }
+
+        .game-container {
+            display: none;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .back-btn {
+            background: #9c27b0;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #7b1fa2;
+            transform: scale(1.05);
+        }
+
+        .game-title {
+            font-size: 2.5rem;
+            color: #6a1b9a;
+        }
+
+        .stats-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #6a1b9a;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #7b1fa2;
+        }
+
+        .palette-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .palette-title {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #6a1b9a;
+            margin-bottom: 15px;
+        }
+
+        .color-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .color-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            border: 4px solid white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .color-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .color-btn.selected {
+            border-color: #9c27b0;
+            transform: scale(1.15);
+            box-shadow: 0 0 20px rgba(156, 39, 176, 0.5);
+        }
+
+        .selected-color-info {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 1rem;
+            color: #6a1b9a;
+        }
+
+        .game-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .control-btn {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: #1976d2;
+            transform: scale(1.05);
+        }
+
+        .control-btn.reset {
+            background: #757575;
+        }
+
+        .control-btn.reset:hover {
+            background: #616161;
+        }
+
+        .game-grid {
+            display: grid;
+            gap: 2px;
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ddd;
+            padding: 5px;
+            border-radius: 10px;
+        }
+
+        .game-cell {
+            aspect-ratio: 1;
+            border: 2px solid #999;
+            border-radius: 3px;
+            background: #f9f9f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: crosshair;
+            transition: all 0.2s ease;
+        }
+
+        .game-cell:hover {
+            transform: scale(1.1);
+            border-color: #9c27b0;
+        }
+
+        .game-cell.painted {
+            border-color: #4caf50;
+            color: transparent;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 400px;
+            margin: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .modal-emoji {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: #6a1b9a;
+            margin-bottom: 10px;
+        }
+
+        .modal-text {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .modal-btn {
+            background: linear-gradient(135deg, #9c27b0, #e91e63);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(156, 39, 176, 0.4);
+        }
+
+        .modal-btn.again {
+            background: linear-gradient(135deg, #4caf50, #2196f3);
+        }
+
+        .instruction {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #6a1b9a;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-title {
+                font-size: 2rem;
+            }
+            
+            .game-title {
+                font-size: 1.8rem;
+            }
+            
+            .menu-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+            
+            .color-btn {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Меню выбора рисунка -->
+        <div id="menu-screen">
+            <div class="header">
+                <h1 class="main-title">🎨 Картины по номерам ✨</h1>
+                <p class="subtitle">Выберите рисунок для раскрашивания!</p>
+            </div>
+            <div class="menu-grid" id="templates-grid"></div>
+        </div>
+	<button class="back-to-menu-button" onclick="goBackToMenu()">
+        🏠 Назад к меню
+    </button>
+        <!-- Игровой экран -->
+        <div id="game-screen" class="game-container">
+            <div class="game-header">
+                <button class="back-btn" onclick="backToMenu()">← Назад</button>
+                <h1 class="game-title" id="current-template-name">🏠 Домик</h1>
+            </div>
+
+            <div class="instruction">
+                Водите мышкой по квадратикам чтобы закрасить их!
+            </div>
+
+            <!-- Статистика -->
+            <div class="stats-panel">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="progress">0%</div>
+                        <div class="stat-label">Готово</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="timer">0:00</div>
+                        <div class="stat-label">Время</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="painted-count">0</div>
+                        <div class="stat-label">Клеток</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Палитра -->
+            <div class="palette-panel">
+                <div class="palette-title">Выбери цвет:</div>
+                <div class="color-grid" id="color-palette"></div>
+                <div class="selected-color-info">
+                    Выбран: <strong id="selected-color-name">Коричневый</strong>
+                </div>
+            </div>
+
+            <!-- Игровое поле -->
+            <div class="game-panel">
+                <div class="controls">
+                    <button class="control-btn" onclick="toggleNumbers()">
+                        <span id="numbers-btn-text">Скрыть номера</span>
+                    </button>
+                    <button class="control-btn reset" onclick="resetGame()">
+                        🔄 Начать заново
+                    </button>
+                </div>
+                <div class="game-grid" id="game-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно завершения -->
+    <div class="modal" id="completion-modal">
+        <div class="modal-content">
+            <div class="modal-emoji">🎉</div>
+            <h2 class="modal-title">⭐ Поздравляем! 💖</h2>
+            <p class="modal-text" id="completion-text">Вы успешно раскрасили картину!</p>
+            <p class="modal-text" id="completion-time">Время: 0:00</p>
+            <div class="modal-buttons">
+                <button class="modal-btn again" onclick="resetGame()">Ещё раз</button>
+                <button class="modal-btn" onclick="backToMenu()">Новый рисунок</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Данные игры
+        const templates = {
+            house: {
+                name: "🏠 Домик",
+                grid: [
+                    [0,0,0,0,1,1,1,1,0,0,0,0],
+                    [0,0,0,1,2,2,2,2,1,0,0,0],
+                    [0,0,1,2,2,2,2,2,2,1,0,0],
+                    [0,1,2,2,3,3,3,3,2,2,1,0],
+                    [1,2,2,3,3,4,4,3,3,2,2,1],
+                    [1,2,3,3,4,5,5,4,3,3,2,1],
+                    [1,2,3,4,5,5,5,5,4,3,2,1],
+                    [1,2,3,4,5,6,6,5,4,3,2,1],
+                    [1,2,3,4,5,6,6,5,4,3,2,1],
+                    [1,2,3,4,4,4,4,4,4,3,2,1],
+                    [7,7,7,7,7,7,7,7,7,7,7,7],
+                    [8,8,8,8,8,8,8,8,8,8,8,8]
+                ]
+            },
+            flower: {
+                name: "🌸 Цветок",
+                grid: [
+                    [0,0,0,1,1,1,0,0,0],
+                    [0,0,1,2,2,2,1,0,0],
+                    [0,1,2,3,3,3,2,1,0],
+                    [1,2,3,4,4,4,3,2,1],
+                    [1,2,3,4,5,4,3,2,1],
+                    [1,2,3,4,4,4,3,2,1],
+                    [0,1,2,3,3,3,2,1,0],
+                    [0,0,1,2,2,2,1,0,0],
+                    [0,0,0,6,6,6,0,0,0],
+                    [0,0,0,6,6,6,0,0,0],
+                    [0,7,7,7,7,7,7,7,0],
+                    [7,7,7,7,7,7,7,7,7]
+                ]
+            },
+            sun: {
+                name: "☀️ Солнышко",
+                grid: [
+                    [0,0,1,0,0,0,1,0,0],
+                    [0,0,0,1,0,1,0,0,0],
+                    [1,0,0,2,2,2,0,0,1],
+                    [0,1,2,3,3,3,2,1,0],
+                    [0,0,2,3,4,3,2,0,0],
+                    [0,1,2,3,3,3,2,1,0],
+                    [1,0,0,2,2,2,0,0,1],
+                    [0,0,0,1,0,1,0,0,0],
+                    [0,0,1,0,0,0,1,0,0]
+                ]
+            },
+            cat: {
+                name: "🐱 Котик",
+                grid: [
+                    [0,0,1,0,0,0,1,0,0],
+                    [0,1,2,1,0,1,2,1,0],
+                    [1,2,2,2,1,2,2,2,1],
+                    [1,2,3,2,2,2,3,2,1],
+                    [1,2,2,4,2,4,2,2,1],
+                    [1,2,2,2,5,2,2,2,1],
+                    [1,2,2,5,5,5,2,2,1],
+                    [0,1,2,2,2,2,2,1,0],
+                    [0,0,1,1,1,1,1,0,0]
+                ]
+            },
+            tree: {
+                name: "🌳 Дерево",
+                grid: [
+                    [0,0,0,1,1,1,0,0,0],
+                    [0,0,1,2,2,2,1,0,0],
+                    [0,1,2,2,2,2,2,1,0],
+                    [1,2,2,2,2,2,2,2,1],
+                    [2,2,2,2,2,2,2,2,2],
+                    [0,1,2,2,2,2,2,1,0],
+                    [0,0,1,2,2,2,1,0,0],
+                    [0,0,0,3,3,3,0,0,0],
+                    [0,0,0,3,3,3,0,0,0],
+                    [4,4,4,4,4,4,4,4,4]
+                ]
+            },
+            car: {
+                name: "🚗 Машинка",
+                grid: [
+                    [0,0,1,1,1,1,1,0,0],
+                    [0,1,2,2,2,2,2,1,0],
+                    [1,2,3,2,2,2,3,2,1],
+                    [1,2,2,2,2,2,2,2,1],
+                    [1,4,2,2,2,2,2,4,1],
+                    [0,5,5,0,0,0,5,5,0]
+                ]
+            },
+            heart: {
+                name: "💖 Сердце",
+                grid: [
+                    [0,1,1,0,1,1,0],
+                    [1,2,2,1,2,2,1],
+                    [2,3,3,2,3,3,2],
+                    [1,2,3,3,3,2,1],
+                    [0,1,2,3,2,1,0],
+                    [0,0,1,2,1,0,0],
+                    [0,0,0,1,0,0,0]
+                ]
+            },
+            star: {
+                name: "⭐ Звёздочка",
+                grid: [
+                    [0,0,0,1,0,0,0],
+                    [0,0,1,2,1,0,0],
+                    [0,1,2,3,2,1,0],
+                    [1,2,3,4,3,2,1],
+                    [0,1,2,3,2,1,0],
+                    [0,0,1,2,1,0,0],
+                    [0,1,0,2,0,1,0],
+                    [1,0,0,2,0,0,1]
+                ]
+            },
+            butterfly: {
+                name: "🦋 Бабочка",
+                grid: [
+                    [0,1,0,2,0,1,0],
+                    [1,3,1,2,1,3,1],
+                    [3,4,3,2,3,4,3],
+                    [1,3,1,2,1,3,1],
+                    [0,1,0,2,0,1,0],
+                    [0,0,0,2,0,0,0],
+                    [0,0,0,2,0,0,0]
+                ]
+            },
+            fish: {
+                name: "🐠 Рыбка",
+                grid: [
+                    [0,0,1,1,0,0,0],
+                    [0,1,2,2,1,0,0],
+                    [1,2,3,2,2,1,0],
+                    [2,3,4,3,2,2,1],
+                    [1,2,3,2,2,1,0],
+                    [0,1,2,2,1,0,0],
+                    [0,0,1,1,0,0,0]
+                ]
+            },
+            rocket: {
+                name: "🚀 Ракета",
+                grid: [
+                    [0,0,0,1,0,0,0],
+                    [0,0,1,2,1,0,0],
+                    [0,1,2,3,2,1,0],
+                    [0,1,2,3,2,1,0],
+                    [0,1,4,3,4,1,0],
+                    [0,1,2,3,2,1,0],
+                    [0,1,2,3,2,1,0],
+                    [1,5,1,3,1,5,1],
+                    [5,0,0,3,0,0,5]
+                ]
+            },
+            cake: {
+                name: "🎂 Тортик",
+                grid: [
+                    [0,0,1,1,1,0,0],
+                    [0,0,2,3,2,0,0],
+                    [1,1,1,1,1,1,1],
+                    [2,4,2,4,2,4,2],
+                    [2,2,2,2,2,2,2],
+                    [3,3,3,3,3,3,3],
+                    [1,1,1,1,1,1,1]
+                ]
+            },
+            balloon: {
+                name: "🎈 Шарик",
+                grid: [
+                    [0,1,1,1,0],
+                    [1,2,3,2,1],
+                    [1,3,4,3,1],
+                    [1,2,3,2,1],
+                    [0,1,2,1,0],
+                    [0,0,5,0,0],
+                    [0,0,5,0,0],
+                    [0,0,5,0,0],
+                    [0,0,5,0,0]
+                ]
+            },
+            apple: {
+                name: "🍎 Яблоко",
+                grid: [
+                    [0,0,1,2,0,0],
+                    [0,3,3,2,0,0],
+                    [3,4,4,4,3,0],
+                    [4,5,4,5,4,3],
+                    [4,4,4,4,4,3],
+                    [3,4,4,4,3,0],
+                    [0,3,3,3,0,0]
+                ]
+            },
+            rainbow: {
+                name: "🌈 Радуга",
+                grid: [
+                    [1,1,1,1,1,1,1],
+                    [2,2,2,2,2,2,2],
+                    [3,3,3,3,3,3,3],
+                    [4,4,4,4,4,4,4],
+                    [5,5,5,5,5,5,5],
+                    [6,6,6,6,6,6,6],
+                    [0,0,0,0,0,0,0]
+                ]
+            },
+            snowman: {
+                name: "⛄ Снеговик",
+                grid: [
+                    [0,0,1,1,1,0,0],
+                    [0,1,2,3,2,1,0],
+                    [1,2,3,4,3,2,1],
+                    [0,1,2,2,2,1,0],
+                    [0,0,5,5,5,0,0],
+                    [0,5,6,5,6,5,0],
+                    [5,6,5,7,5,6,5],
+                    [0,5,5,5,5,5,0],
+                    [0,0,8,8,8,0,0],
+                    [0,8,8,8,8,8,0],
+                    [8,8,8,8,8,8,8]
+                ]
+            },
+            ice_cream: {
+                name: "🍦 Мороженое",
+                grid: [
+                    [0,1,2,2,1,0],
+                    [1,3,4,4,3,1],
+                    [1,4,5,5,4,1],
+                    [1,3,4,4,3,1],
+                    [0,1,6,6,1,0],
+                    [0,0,6,6,0,0],
+                    [0,0,6,6,0,0],
+                    [0,0,6,6,0,0]
+                ]
+            },
+            boat: {
+                name: "⛵ Кораблик",
+                grid: [
+                    [0,0,1,0,0],
+                    [0,0,1,0,0],
+                    [0,2,1,2,0],
+                    [2,3,1,3,2],
+                    [4,4,4,4,4],
+                    [0,4,4,4,0]
+                ]
+            },
+            pizza: {
+                name: "🍕 Пицца",
+                grid: [
+                    [0,0,1,1,1,0,0],
+                    [0,1,2,2,2,1,0],
+                    [1,2,3,2,3,2,1],
+                    [1,2,2,4,2,2,1],
+                    [1,2,3,2,3,2,1],
+                    [0,1,2,2,2,1,0],
+                    [0,0,1,1,1,0,0]
+                ]
+            },
+            elephant: {
+                name: "🐘 Слоник",
+                grid: [
+                    [0,0,1,1,1,1,0,0],
+                    [0,1,2,2,2,2,1,0],
+                    [1,2,3,2,2,3,2,1],
+                    [1,2,2,2,2,2,2,1],
+                    [1,2,2,4,4,2,2,1],
+                    [0,1,2,2,2,2,1,0],
+                    [0,0,5,0,0,5,0,0],
+                    [0,5,5,0,0,5,5,0]
+                ]
+            },
+            mushroom: {
+                name: "🍄 Грибок",
+                grid: [
+                    [0,1,1,1,1,1,0],
+                    [1,2,3,2,3,2,1],
+                    [2,3,2,3,2,3,2],
+                    [1,2,2,2,2,2,1],
+                    [0,0,4,4,4,0,0],
+                    [0,0,4,4,4,0,0],
+                    [0,5,5,5,5,5,0]
+                ]
+            },
+            robot: {
+                name: "🤖 Робот",
+                grid: [
+                    [1,1,1,1,1,1,1],
+                    [1,2,3,1,3,2,1],
+                    [1,1,1,4,1,1,1],
+                    [1,5,5,5,5,5,1],
+                    [1,1,6,1,6,1,1],
+                    [0,1,1,1,1,1,0],
+                    [0,7,0,0,0,7,0]
+                ]
+            },
+            duck: {
+                name: "🦆 Утка",
+                grid: [
+                    [0,0,1,1,1,0,0],
+                    [0,1,2,3,2,1,0],
+                    [1,2,2,2,2,2,1],
+                    [1,2,4,2,2,2,2],
+                    [1,2,2,2,2,2,1],
+                    [0,1,2,2,2,1,0],
+                    [0,0,5,5,5,0,0]
+                ]
+            },
+            castle: {
+                name: "🏰 Замок",
+                grid: [
+                    [1,0,1,0,1,0,1],
+                    [1,1,1,1,1,1,1],
+                    [2,3,2,3,2,3,2],
+                    [2,2,2,2,2,2,2],
+                    [2,4,2,5,2,4,2],
+                    [2,2,2,2,2,2,2],
+                    [1,1,6,6,6,1,1]
+                ]
+            },
+            owl: {
+                name: "🦉 Сова",
+                grid: [
+                    [0,1,1,1,1,1,0],
+                    [1,2,2,2,2,2,1],
+                    [1,3,4,2,4,3,1],
+                    [1,2,2,5,2,2,1],
+                    [1,2,6,6,6,2,1],
+                    [0,1,2,2,2,1,0],
+                    [0,0,1,1,1,0,0]
+                ]
+            }
+        };
+
+        const colors = {
+            0: '#E6F3FF', 1: '#8B4513', 2: '#FF6B6B', 3: '#FFD93D', 4: '#6BCB77',
+            5: '#4ECDC4', 6: '#45B7D1', 7: '#90EE90', 8: '#DDA0DD', 9: '#FFA07A'
+        };
+
+        const colorNames = {
+            0: 'Фон', 1: 'Коричневый', 2: 'Красный', 3: 'Жёлтый', 4: 'Зелёный',
+            5: 'Бирюзовый', 6: 'Синий', 7: 'Салатовый', 8: 'Фиолетовый', 9: 'Оранжевый'
+        };
+
+        // Состояние игры
+        let currentTemplate = null;
+        let paintedCells = new Set();
+        let selectedColor = 1;
+        let showNumbers = true;
+        let gameStarted = false;
+        let startTime = 0;
+        let timerInterval = null;
+        let isDrawing = false;
+
+        // Инициализация
+        function init() {
+            createTemplateMenu();
+            createColorPalette();
+        }
+	function goBackToMenu() {
+            window.location.href = 'index.html'; // Замените на имя файла вашего меню
+        }
+        function createTemplateMenu() {
+            const grid = document.getElementById('templates-grid');
+            grid.innerHTML = '';
+
+            Object.entries(templates).forEach(([key, template]) => {
+                const card = document.createElement('div');
+                card.className = 'template-card';
+                card.onclick = () => selectTemplate(key);
+
+                const emoji = template.name.split(' ')[0];
+                const name = template.name.split(' ').slice(1).join(' ');
+
+                card.innerHTML = `
+                    <div class="template-emoji">${emoji}</div>
+                    <div class="template-name">${name}</div>
+                    <div class="template-preview" style="grid-template-columns: repeat(${template.grid[0].length}, 1fr);">
+                        ${template.grid.flat().map(colorNum => 
+                            `<div class="preview-cell" style="background-color: ${colors[colorNum]};"></div>`
+                        ).join('')}
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        function createColorPalette() {
+            const palette = document.getElementById('color-palette');
+            palette.innerHTML = '';
+
+            for (let i = 0; i <= 9; i++) {
+                const btn = document.createElement('div');
+                btn.className = 'color-btn';
+                if (i === selectedColor) btn.classList.add('selected');
+                btn.style.backgroundColor = colors[i];
+                btn.onclick = () => selectColor(i);
+                btn.innerHTML = `<div>${i}</div>`;
+                palette.appendChild(btn);
+            }
+        }
+
+        function selectTemplate(templateKey) {
+            currentTemplate = templates[templateKey];
+            document.getElementById('current-template-name').textContent = currentTemplate.name;
+            document.getElementById('menu-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'block';
+            resetGame();
+            createGameGrid();
+        }
+
+        function selectColor(colorNum) {
+            selectedColor = colorNum;
+            document.querySelectorAll('.color-btn').forEach(btn => btn.classList.remove('selected'));
+            document.querySelectorAll('.color-btn')[colorNum].classList.add('selected');
+            document.getElementById('selected-color-name').textContent = colorNames[colorNum];
+        }
+
+        function createGameGrid() {
+            const grid = document.getElementById('game-grid');
+            grid.innerHTML = '';
+            grid.style.gridTemplateColumns = `repeat(${currentTemplate.grid[0].length}, 1fr)`;
+
+            currentTemplate.grid.forEach((row, rowIndex) => {
+                row.forEach((colorNum, colIndex) => {
+                    const cell = document.createElement('div');
+                    cell.className = 'game-cell';
+                    cell.dataset.row = rowIndex;
+                    cell.dataset.col = colIndex;
+                    cell.dataset.color = colorNum;
+                    cell.textContent = showNumbers ? colorNum : '';
+
+                    cell.addEventListener('mousedown', handleMouseDown);
+                    cell.addEventListener('mouseenter', handleMouseEnter);
+                    cell.addEventListener('mouseup', handleMouseUp);
+
+                    grid.appendChild(cell);
+                });
+            });
+
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+
+        function handleMouseDown(e) {
+            e.preventDefault();
+            isDrawing = true;
+            paintCell(e.target);
+        }
+
+        function handleMouseEnter(e) {
+            if (isDrawing) {
+                paintCell(e.target);
+            }
+        }
+
+        function handleMouseUp() {
+            isDrawing = false;
+        }
+
+        function paintCell(cell) {
+            if (!gameStarted) {
+                gameStarted = true;
+                startTimer();
+            }
+
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            const correctColor = parseInt(cell.dataset.color);
+            const cellKey = `${row}-${col}`;
+
+            if (selectedColor === correctColor && !paintedCells.has(cellKey)) {
+                paintedCells.add(cellKey);
+                cell.style.backgroundColor = colors[correctColor];
+                cell.classList.add('painted');
+                cell.textContent = '';
+                
+                updateStats();
+                checkCompletion();
+            }
+        }
+
+        function startTimer() {
+            startTime = Date.now();
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('timer').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function updateStats() {
+            const totalCells = currentTemplate.grid.flat().length;
+            const progress = Math.round((paintedCells.size / totalCells) * 100);
+            document.getElementById('progress').textContent = `${progress}%`;
+            document.getElementById('painted-count').textContent = paintedCells.size;
+        }
+
+        function checkCompletion() {
+            const totalCells = currentTemplate.grid.flat().length;
+            if (paintedCells.size === totalCells) {
+                clearInterval(timerInterval);
+                setTimeout(() => showCompletionModal(), 500);
+            }
+        }
+
+        function showCompletionModal() {
+            const modal = document.getElementById('completion-modal');
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            
+            document.getElementById('completion-text').textContent = 
+                `Вы успешно раскрасили ${currentTemplate.name}!`;
+            document.getElementById('completion-time').textContent = 
+                `Время: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            modal.style.display = 'flex';
+        }
+
+        function toggleNumbers() {
+            showNumbers = !showNumbers;
+            document.getElementById('numbers-btn-text').textContent = 
+                showNumbers ? 'Скрыть номера' : 'Показать номера';
+            
+            document.querySelectorAll('.game-cell:not(.painted)').forEach(cell => {
+                cell.textContent = showNumbers ? cell.dataset.color : '';
+            });
+        }
+
+        function resetGame() {
+            paintedCells.clear();
+            gameStarted = false;
+            clearInterval(timerInterval);
+            document.getElementById('timer').textContent = '0:00';
+            document.getElementById('progress').textContent = '0%';
+            document.getElementById('painted-count').textContent = '0';
+            document.getElementById('completion-modal').style.display = 'none';
+            
+            if (currentTemplate) {
+                createGameGrid();
+            }
+        }
+
+        function backToMenu() {
+            clearInterval(timerInterval);
+            document.getElementById('game-screen').style.display = 'none';
+            document.getElementById('menu-screen').style.display = 'block';
+            document.getElementById('completion-modal').style.display = 'none';
+            currentTemplate = null;
+            resetGame();
+        }
+
+        // Запуск игры
+        init();
+    </script>
+</body>
+</html>

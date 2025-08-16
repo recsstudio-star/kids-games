@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Игра: повтори число кружочками</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#7dd3fc;--good:#7ee787}
+    html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Arial;background:linear-gradient(180deg,#071029 0%,#071022 100%);color:#e6eef8}
+    .app{max-width:980px;margin:28px auto;padding:20px}
+    header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:100px}
+    h1{font-size:20px;margin:0;flex:1 1 100%}
+    .controls{display:flex;gap:12px;align-items:center}
+    label{font-size:14px}
+    input[type=range]{width:220px;cursor:pointer;padding:6px}
+    button{background:var(--accent);border:none;padding:12px 20px;border-radius:8px;cursor:pointer;font-size:16px}
+    button:hover{filter:brightness(1.05)}
+	.back-to-menu-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255,107,107,0.3);
+            z-index: 1000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .back-to-menu-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255,107,107,0.4);
+        }
+    .game{background:rgba(255,255,255,0.02);padding:16px;border-radius:12px}
+
+    .columns{display:flex;gap:10px;margin-top:18px;align-items:flex-end;height:520px}
+    .column{flex:1;min-width:56px;background:rgba(255,255,255,0.03);border-radius:8px;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+
+    .rect{flex:1;width:100%;display:flex;align-items:stretch;justify-content:center;cursor:pointer}
+    .circles{display:flex;flex-direction:column;justify-content:flex-end;gap:8px;width:100%;padding-top:8px;box-sizing:border-box}
+
+    .slot{flex:1;display:flex;align-items:center;justify-content:center}
+    .circle{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:600;box-shadow:0 6px 12px rgba(2,6,23,0.6);cursor:pointer}
+
+    .digit-label{font-size:20px;font-weight:bold;margin-top:12px}
+    .hint{margin-top:12px;text-align:center}
+    .hint span{display:inline-block;font-size:48px;font-weight:800;color:var(--accent);padding:6px 12px;border-radius:8px;background:rgba(125,211,252,0.06)}
+    .msg{margin-top:12px;font-weight:700;text-align:center}
+    footer{margin-top:12px;font-size:13px;opacity:.8;text-align:center}
+
+    @media(max-width:640px){.columns{height:380px}.hint span{font-size:34px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>Игра: повтори число кружочками</h1>
+      <div class="controls">
+        <label>Сложность <span id="levelLabel">4</span></label>
+        <input id="levelRange" type="range" min="1" max="10" value="4">
+        <button id="startBtn">Начать</button>
+      </div>
+    </header>
+	<button class="back-to-menu-button" onclick="goBackToMenu()">
+        🏠 Назад к меню
+    </button>
+    <section class="game">
+      <div id="columns" class="columns" aria-live="polite"></div>
+
+      <div class="msg" id="message"></div>
+      <div class="hint">Цель: <span id="targetNumber">0</span></div>
+      <footer>Клик по пустой ячейке добавляет кружок, клик по заполненной — удаляет. При совпадении вы увидите «Молодец!» и уровень повысится.</footer>
+    </section>
+  </div>
+
+  <script>
+function goBackToMenu() {
+            window.location.href = 'index.html'; // Замените на имя файла вашего меню
+        }
+    (function(){
+      const levelRange=document.getElementById('levelRange');
+      const levelLabel=document.getElementById('levelLabel');
+      const startBtn=document.getElementById('startBtn');
+      const columnsEl=document.getElementById('columns');
+      const targetEl=document.getElementById('targetNumber');
+      const messageEl=document.getElementById('message');
+      let level=parseInt(levelRange.value,10);
+      let target=0;
+      let stateDigits=[];
+
+      function randTarget(lvl){
+        const max=Math.pow(10,lvl)-1;
+        return Math.floor(Math.random()*(max+1));
+      }
+	
+      function padToLength(arr,len){
+        while(arr.length<len) arr.unshift(0);
+        return arr;
+      }
+
+      function render(){
+        columnsEl.innerHTML='';
+        const cols=level;
+        const playerDigits=padToLength([...stateDigits],cols);
+
+        for(let i=0;i<cols;i++){
+          const col=document.createElement('div');
+          col.className='column';
+
+          const rect=document.createElement('div');
+          rect.className='rect';
+
+          const circlesWrap=document.createElement('div');
+          circlesWrap.className='circles';
+
+          const digit=playerDigits[i]||0;
+
+          for(let row=0;row<9;row++){
+            const slot=document.createElement('div');
+            slot.className='slot';
+
+            const circleEl=document.createElement('div');
+            circleEl.className='circle';
+
+            if(row>=9-digit){
+              circleEl.style.background='linear-gradient(180deg,#60a5fa,#2563eb)';
+              slot.addEventListener('click',()=>changeDigit(i,-1));
+            } else {
+              circleEl.style.background='transparent';
+              circleEl.style.opacity='0';
+              slot.addEventListener('click',()=>changeDigit(i,1));
+            }
+
+            slot.appendChild(circleEl);
+            circlesWrap.appendChild(slot);
+          }
+
+          rect.appendChild(circlesWrap);
+          col.appendChild(rect);
+
+          const numLabel=document.createElement('div');
+          numLabel.className='digit-label';
+          numLabel.textContent=digit;
+          col.appendChild(numLabel);
+
+          columnsEl.appendChild(col);
+        }
+
+        targetEl.textContent=target;
+        levelLabel.textContent=level;
+      }
+
+      function changeDigit(columnIndex,delta){
+        const cols=level;
+        if(stateDigits.length<cols) stateDigits=padToLength(stateDigits,cols);
+        stateDigits[columnIndex]=Math.max(0,Math.min(9,(stateDigits[columnIndex]||0)+delta));
+        render();
+        checkWin();
+      }
+
+      function checkWin(){
+        const player=parseInt(stateDigits.join(''))||0;
+        if(player===target){
+          messageEl.textContent='Молодец!';
+          messageEl.style.color='var(--good)';
+          setTimeout(()=>{advanceLevel();},800);
+        } else {
+          messageEl.textContent='';
+        }
+      }
+
+      function startGame(){
+        level=Math.max(1,Math.min(10,parseInt(levelRange.value,10)));
+        stateDigits=Array(level).fill(0);
+        target=randTarget(level);
+        render();
+        messageEl.textContent='';
+      }
+
+      function advanceLevel(){
+        if(level<10) level++;
+        levelRange.value=level;
+        startGame();
+      }
+
+      startBtn.addEventListener('click',startGame);
+      levelRange.addEventListener('input',()=>{levelLabel.textContent=levelRange.value;});
+
+      startGame();
+    })();
+  </script>
+</body>
+</html>
