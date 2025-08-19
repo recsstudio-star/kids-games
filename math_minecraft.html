@@ -16,7 +16,32 @@
             background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
             overflow: hidden;
         }
-
+	.back-to-menu-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: 'Comic Sans MS', cursive, Arial, sans-serif;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(255,107,107,0.3);
+            z-index: 1000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .back-to-menu-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(255,107,107,0.4);
+        }
         .game-container {
             width: 100vw;
             height: 100vh;
@@ -637,7 +662,9 @@
             <button class="mode-btn active" onclick="setMode('mine')">Копание</button>
             <button class="mode-btn" onclick="setMode('build')">Строительство</button>
         </div>
-
+	<button class="back-to-menu-button" onclick="goBackToMenu()">
+        🏠 Назад к меню
+    	</button>
         <div class="controls-help">
             <strong>Управление:</strong><br>
             WASD - движение<br>
@@ -770,7 +797,9 @@
             setupEventListeners();
             startMonsterAI();
         }
-
+	function goBackToMenu() {
+            window.location.href = 'index.html'; // Замените на имя файла вашего меню
+        }
         // Установить цель
         function setGoal() {
             // Сначала убираем старую цель если есть
