@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Математический Minecraft 3D</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 100%);
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .ui-panel {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            z-index: 200;
+            border: 1px solid #4CAF50;
+            pointer-events: auto;
+            font-size: 12px;
+            line-height: 1.3;
+            max-width: 180px;
+        }
+
+        .health-bar {
+            width: 120px;
+            height: 12px;
+            background: #333;
+            border: 1px solid #666;
+            margin: 3px 0;
+            position: relative;
+            border-radius: 2px;
+        }
+
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ffaa00, #44ff44);
+            transition: width 0.3s ease;
+        }
+
+        .inventory {
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 3px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 6px;
+            border-radius: 8px;
+            border: 1px solid #4CAF50;
+            z-index: 200;
+            pointer-events: auto;
+        }
+
+        .inventory-slot {
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, rgba(68,68,68,0.8), rgba(102,102,102,0.8));
+            border: 1px solid #666;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            border-radius: 4px;
+            pointer-events: auto;
+            font-size: 14px;
+        }
+
+        .inventory-slot.selected {
+            border-color: #4CAF50;
+            box-shadow: 0 0 6px rgba(76, 175, 80, 0.8);
+            background: linear-gradient(135deg, rgba(76,175,80,0.3), rgba(56,142,60,0.3));
+        }
+
+        .inventory-slot .count {
+            position: absolute;
+            bottom: 1px;
+            right: 1px;
+            font-size: 8px;
+            color: white;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 1px 2px;
+            border-radius: 2px;
+            min-width: 10px;
+            text-align: center;
+        }
+
+        .world {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(25, 1fr);
+            grid-template-rows: repeat(18, 1fr);
+            gap: 1px;
+            z-index: 1;
+        }
+
+        .block {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.1s;
+            border-radius: 2px;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.3);
+        }
+
+        .block:hover {
+            transform: scale(1.05);
+            z-index: 10;
+        }
+
+        /* Реалистичные текстуры блоков */
+        .block.grass { 
+            background: linear-gradient(135deg, #7CB342 0%, #689F38 50%, #558B2F 100%);
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3) 1px, transparent 1px),
+                radial-gradient(circle at 80% 60%, rgba(255,255,255,0.2) 1px, transparent 1px);
+        }
+        .block.dirt { 
+            background: linear-gradient(135deg, #8D6E63 0%, #795548 50%, #5D4037 100%);
+            background-image: 
+                repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.1) 2px, rgba(0,0,0,0.1) 4px);
+        }
+        .block.stone { 
+            background: linear-gradient(135deg, #9E9E9E 0%, #757575 50%, #616161 100%);
+            background-image: 
+                radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 2px, transparent 2px),
+                radial-gradient(circle at 70% 70%, rgba(0,0,0,0.3) 1px, transparent 1px);
+        }
+        .block.wood { 
+            background: linear-gradient(90deg, #8BC34A 0%, #7CB342 20%, #689F38 40%, #7CB342 60%, #8BC34A 80%, #9CCC65 100%);
+            background-size: 20px 100%;
+        }
+        .block.leaves { 
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 50%, #2E7D32 100%);
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.3) 1px, transparent 1px),
+                radial-gradient(circle at 75% 75%, rgba(255,255,255,0.2) 1px, transparent 1px),
+                radial-gradient(circle at 50% 10%, rgba(0,0,0,0.2) 1px, transparent 1px);
+        }
+        .block.coal { 
+            background: linear-gradient(135deg, #424242 0%, #212121 50%, #000000 100%);
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(255,255,255,0.1) 1px, transparent 1px);
+        }
+        .block.iron { 
+            background: linear-gradient(135deg, #CFD8DC 0%, #B0BEC5 50%, #90A4AE 100%);
+            background-image: 
+                linear-gradient(45deg, rgba(255,255,255,0.5) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255,255,255,0.5) 25%, transparent 25%);
+            background-size: 4px 4px;
+        }
+        .block.gold { 
+            background: linear-gradient(135deg, #FFD700 0%, #FFC107 50%, #FF8F00 100%);
+            background-image: 
+                radial-gradient(circle at 30% 20%, rgba(255,255,255,0.6) 2px, transparent 2px),
+                radial-gradient(circle at 70% 80%, rgba(255,255,255,0.4) 1px, transparent 1px);
+        }
+        .block.diamond { 
+            background: linear-gradient(135deg, #00BCD4 0%, #0097A7 50%, #006064 100%);
+            background-image: 
+                linear-gradient(30deg, rgba(255,255,255,0.8) 50%, transparent 50%),
+                linear-gradient(-30deg, rgba(255,255,255,0.6) 50%, transparent 50%);
+            animation: diamond-sparkle 2s infinite;
+        }
+
+        .block.goal { 
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 50%, #FF6B6B 100%);
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8) 3px, transparent 3px),
+                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.4) 2px, transparent 2px),
+                radial-gradient(circle at 75% 75%, rgba(255,255,255,0.4) 2px, transparent 2px);
+            animation: goal-pulse 1.5s infinite;
+            border: 3px solid #FF4757 !important;
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
+        }
+
+        @keyframes goal-pulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
+            }
+            50% { 
+                transform: scale(1.1);
+                box-shadow: 0 0 30px rgba(255, 71, 87, 0.8);
+            }
+        }
+
+        .player {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            border-radius: 5px;
+            z-index: 50;
+            transition: all 0.3s ease;
+            border: 2px solid #0D47A1;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        .player::before {
+            content: '👤';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 16px;
+        }
+
+        .monster {
+            position: absolute;
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
+            border-radius: 5px;
+            z-index: 50;
+            transition: all 0.5s ease;
+            border: 2px solid #b71c1c;
+            box-shadow: 0 2px 15px rgba(244, 67, 54, 0.5);
+            animation: monster-pulse 1s infinite alternate;
+        }
+
+        .monster::before {
+            content: '👹';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+        }
+
+        @keyframes monster-pulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        .math-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .math-modal.show {
+            display: flex;
+        }
+
+        .math-content {
+            background: linear-gradient(135deg, #1976D2 0%, #1565C0 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: modalPop 0.3s ease;
+            border: 3px solid #0D47A1;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        @keyframes modalPop {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .math-question {
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .math-input {
+            font-size: 20px;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            margin: 10px;
+            width: 120px;
+            text-align: center;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .math-buttons {
+            margin-top: 20px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+        }
+
+        .btn.cancel {
+            background: linear-gradient(135deg, #f44336 0%, #c62828 100%);
+        }
+
+        .notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 18px;
+            z-index: 2000;
+            display: none;
+            border: 2px solid #4CAF50;
+            animation: notification-pop 0.5s ease;
+        }
+
+        @keyframes notification-pop {
+            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        .mode-selector {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #4CAF50;
+            z-index: 200;
+            pointer-events: auto;
+            font-size: 11px;
+        }
+
+        .mode-btn {
+            background: linear-gradient(135deg, rgba(102,102,102,0.8) 0%, rgba(68,68,68,0.8) 100%);
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            margin: 1px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            pointer-events: auto;
+            font-size: 10px;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, rgba(76,175,80,0.9) 0%, rgba(56,142,60,0.9) 100%);
+            box-shadow: 0 1px 4px rgba(76, 175, 80, 0.4);
+        }
+
+        .danger-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 0, 0, 0.1);
+            pointer-events: none;
+            z-index: 5;
+            animation: danger-flash 0.5s infinite alternate;
+            display: none;
+        }
+
+        .danger-overlay.show {
+            display: block;
+        }
+
+        @keyframes danger-flash {
+            0% { opacity: 0.1; }
+            100% { opacity: 0.3; }
+        }
+
+        .block-damage {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 2px,
+                rgba(255, 0, 0, 0.3) 2px,
+                rgba(255, 0, 0, 0.3) 4px
+            );
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .controls-help {
+            position: absolute;
+            bottom: 50px;
+            right: 5px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 6px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            max-width: 150px;
+            z-index: 200;
+            pointer-events: auto;
+            line-height: 1.2;
+        }
+
+        /* Новый игрок кнопка */
+        .new-game-btn {
+            position: absolute;
+            top: 5px;
+            right: 120px;
+            background: linear-gradient(135deg, rgba(255,152,0,0.9) 0%, rgba(245,124,0,0.9) 100%);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(255, 152, 0, 0.3);
+            z-index: 200;
+            pointer-events: auto;
+        }
+
+        .new-game-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(255, 152, 0, 0.5);
+        }
+
+        /* Экран окончания игры */
+        .game-over-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            color: white;
+            text-align: center;
+        }
+
+        .game-over-screen.show {
+            display: flex;
+        }
+
+        .game-over-content {
+            background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid #8b0000;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            animation: gameOverPop 0.5s ease;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        @keyframes gameOverPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .game-over-title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            color: #ffebee;
+            animation: titleShake 0.5s ease-in-out;
+        }
+
+        @keyframes titleShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .game-over-stats {
+            font-size: 18px;
+            margin: 20px 0;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .game-over-buttons {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .game-over-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .game-over-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.5);
+        }
+
+        .game-over-btn.secondary {
+            background: linear-gradient(135deg, #666 0%, #444 100%);
+            box-shadow: 0 6px 20px rgba(102, 102, 102, 0.3);
+        }
+
+        .game-over-btn.secondary:hover {
+            box-shadow: 0 8px 25px rgba(102, 102, 102, 0.5);
+        }
+
+        /* Экран победы уровня */
+        .level-complete-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+            color: white;
+            text-align: center;
+        }
+
+        .level-complete-screen.show {
+            display: flex;
+        }
+
+        .level-complete-content {
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid #2E7D32;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            animation: levelCompletePop 0.5s ease;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        @keyframes levelCompletePop {
+            0% { transform: scale(0.5) rotate(-5deg); opacity: 0; }
+            50% { transform: scale(1.1) rotate(0deg); opacity: 0.8; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .level-complete-title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.8);
+            animation: titleGlow 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes titleGlow {
+            0% { text-shadow: 3px 3px 6px rgba(0,0,0,0.8); }
+            100% { text-shadow: 3px 3px 20px rgba(255,255,255,0.8); }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="ui-panel">
+            <div>Очки: <span id="score">0</span></div>
+            <div>Уровень: <span id="level">1</span></div>
+            <div>Здоровье:</div>
+            <div class="health-bar">
+                <div class="health-fill" id="healthFill" style="width: 100%"></div>
+            </div>
+            <div>Режим: <span id="current-mode">Копание</span></div>
+            <div>Монстр через: <span id="monster-distance">-</span></div>
+            <div style="color: #FF6B6B; font-weight: bold;">🎯 Цель: <span id="goal-distance">-</span></div>
+        </div>
+
+        <button class="new-game-btn" onclick="restartGame()">🔄 Новая игра</button>
+
+        <div class="mode-selector">
+            <div>Режим игры:</div>
+            <button class="mode-btn active" onclick="setMode('mine')">Копание</button>
+            <button class="mode-btn" onclick="setMode('build')">Строительство</button>
+        </div>
+
+        <div class="controls-help">
+            <strong>Управление:</strong><br>
+            WASD - движение<br>
+            Клик - взаимодействие<br>
+            🎯 Дойдите до цели!<br>
+            Убегайте от монстра! 👹
+        </div>
+
+        <div class="world" id="world"></div>
+        <div class="player" id="player"></div>
+        <div class="monster" id="monster"></div>
+
+        <div class="inventory">
+            <div class="inventory-slot selected" data-block="grass">🌱<span class="count">0</span></div>
+            <div class="inventory-slot" data-block="dirt">🟫<span class="count">0</span></div>
+            <div class="inventory-slot" data-block="stone">⬜<span class="count">0</span></div>
+            <div class="inventory-slot" data-block="wood">🪵<span class="count">0</span></div>
+            <div class="inventory-slot" data-block="coal">⚫<span class="count">0</span></div>
+            <div class="inventory-slot" data-block="iron">🔩<span class="count">0</span></div>
+            <div class="inventory-slot" data-block="gold">🟨<span class="count">0</span></div>
+            <div class="inventory-slot" data-block="diamond">💎<span class="count">0</span></div>
+        </div>
+
+        <div class="danger-overlay" id="dangerOverlay"></div>
+    </div>
+
+    <div class="math-modal" id="mathModal">
+        <div class="math-content">
+            <div class="math-question" id="mathQuestion"></div>
+            <input type="number" class="math-input" id="mathAnswer" placeholder="?">
+            <div class="math-buttons">
+                <button class="btn" onclick="checkAnswer()">Ответить</button>
+                <button class="btn cancel" onclick="closeMathModal()">Отмена</button>
+            </div>
+            <div style="margin-top: 10px; font-size: 14px; opacity: 0.8;">
+                Только сложение и вычитание! 🧮
+            </div>
+        </div>
+    </div>
+
+    <div class="game-over-screen" id="gameOverScreen">
+        <div class="game-over-content">
+            <div class="game-over-title">ВЫ ПРОИГРАЛИ! 💀</div>
+            <div style="font-size: 20px; margin-bottom: 20px;">Монстр вас поймал!</div>
+            
+            <div class="game-over-stats">
+                <div><strong>Итоговый счет:</strong> <span id="finalScore">0</span></div>
+                <div><strong>Достигнутый уровень:</strong> <span id="finalLevel">1</span></div>
+                <div><strong>Блоков добыто:</strong> <span id="blocksMinedTotal">0</span></div>
+            </div>
+            
+            <div class="game-over-buttons">
+                <button class="game-over-btn" onclick="restartGameFromOver()">🔄 Новая игра</button>
+                <button class="game-over-btn secondary" onclick="hideGameOver()">📊 Посмотреть результат</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Новый экран завершения уровня -->
+    <div class="level-complete-screen" id="levelCompleteScreen">
+        <div class="level-complete-content">
+            <div class="level-complete-title">🎉 УРОВЕНЬ ПРОЙДЕН! 🎉</div>
+            <div style="font-size: 20px; margin-bottom: 20px;">Цель достигнута!</div>
+            
+            <div class="game-over-stats">
+                <div><strong>Получено очков:</strong> <span id="levelBonus">0</span></div>
+                <div><strong>Новый уровень:</strong> <span id="newLevel">2</span></div>
+                <div><strong>Всего очков:</strong> <span id="totalScore">0</span></div>
+            </div>
+            
+            <div class="game-over-buttons">
+                <button class="game-over-btn" onclick="startNextLevel()">➡️ Следующий уровень</button>
+                <button class="game-over-btn secondary" onclick="restartGame()">🔄 Новая игра</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        // Игровые переменные
+        let gameMode = 'mine';
+        let selectedBlock = 'grass';
+        let score = 0;
+        let level = 1;
+        let health = 100;
+        let currentMathProblem = null;
+        let currentAction = null;
+        let currentPosition = null;
+        let gameRunning = true;
+        let blocksMinedCount = 0;
+        let goalPos = { x: 15, y: 8 };
+        let goalReached = false;
+        let levelTransition = false; // Флаг для остановки монстра при переходе уровня
+
+        // Позиции
+        let playerPos = { x: 5, y: 5 };
+        let monsterPos = { x: 20, y: 15 };
+        let monsterTarget = null;
+        let monsterMoveInterval = null;
+
+        // Инвентарь игрока
+        let inventory = {
+            grass: 0, dirt: 0, stone: 0, wood: 0,
+            coal: 0, iron: 0, gold: 0, diamond: 0
+        };
+
+        // Прочность блоков (сколько ходов монстру нужно для разрушения)
+        const blockStrength = {
+            grass: 1, dirt: 2, stone: 4, wood: 3,
+            coal: 5, iron: 8, gold: 6, diamond: 12
+        };
+
+        // Сложность блоков (только для очков, математика упрощена)
+        const blockDifficulty = {
+            grass: 1, dirt: 1, stone: 2, wood: 2,
+            coal: 3, iron: 4, gold: 5, diamond: 6
+        };
+
+        // Состояние блоков (для отслеживания повреждений от монстра)
+        let blockStates = {};
+
+        // Инициализация игры
+        function initGame() {
+            generateWorld();
+            setGoal();
+            positionPlayer();
+            positionMonster();
+            updateUI();
+            setupEventListeners();
+            startMonsterAI();
+        }
+
+        // Установить цель
+        function setGoal() {
+            // Сначала убираем старую цель если есть
+            const oldGoalBlock = document.querySelector('.goal');
+            if (oldGoalBlock) {
+                oldGoalBlock.classList.remove('goal');
+                oldGoalBlock.innerHTML = '';
+                const blockIndex = parseInt(oldGoalBlock.dataset.index);
+                const originalType = blockStates[blockIndex].type;
+                setBlockType(oldGoalBlock, originalType);
+            }
+            
+            // Цель становится дальше с каждым уровнем (+2 каждый раз)
+            const baseDistance = 8;
+            const distance = baseDistance + (level - 1) * 2; // 8, 10, 12, 14...
+            
+            goalPos.x = Math.min(24, playerPos.x + distance);
+            goalPos.y = Math.max(0, Math.min(17, playerPos.y + Math.floor(Math.random() * 6) - 3));
+            
+            const goalIndex = goalPos.y * 25 + goalPos.x;
+            const goalBlock = document.querySelector(`[data-index="${goalIndex}"]`);
+            if (goalBlock) {
+                // Сохраняем оригинальный тип блока
+                blockStates[goalIndex].originalType = blockStates[goalIndex].type;
+                
+                goalBlock.classList.add('goal');
+                goalBlock.innerHTML = '🎯';
+            }
+            
+            goalReached = false;
+            levelTransition = false;
+        }
+
+        // Проверить достижение цели
+        function checkGoal() {
+            if (playerPos.x === goalPos.x && playerPos.y === goalPos.y && !goalReached && !levelTransition) {
+                goalReached = true;
+                levelTransition = true;
+                
+                // Останавливаем монстра
+                if (monsterMoveInterval) {
+                    clearInterval(monsterMoveInterval);
+                }
+                
+                // Рассчитываем бонус
+                const levelBonus = 100 * level;
+                score += levelBonus;
+                
+                // Увеличиваем уровень
+                level++;
+                
+                // Бонус здоровья
+                health = Math.min(100, health + 20);
+                
+                // Показываем экран завершения уровня
+                document.getElementById('levelBonus').textContent = levelBonus;
+                document.getElementById('newLevel').textContent = level;
+                document.getElementById('totalScore').textContent = score;
+                document.getElementById('levelCompleteScreen').classList.add('show');
+                
+                updateUI();
+            }
+        }
+
+        // Начать следующий уровень
+        function startNextLevel() {
+            document.getElementById('levelCompleteScreen').classList.remove('show');
+            
+            // Убираем старую цель ПОЛНОСТЬЮ
+            const oldGoalBlock = document.querySelector('.goal');
+            if (oldGoalBlock) {
+                oldGoalBlock.classList.remove('goal');
+                oldGoalBlock.innerHTML = '';
+                // Восстанавливаем оригинальный тип блока
+                const blockIndex = parseInt(oldGoalBlock.dataset.index);
+                const originalType = blockStates[blockIndex].type;
+                setBlockType(oldGoalBlock, originalType);
+            }
+            
+            // Перемещаем игрока в левую часть
+            playerPos = { x: Math.floor(Math.random() * 3) + 1, y: Math.floor(Math.random() * 8) + 5 };
+            
+            // Перемещаем монстра в правый нижний угол (безопасно далеко!)
+            monsterPos = { 
+                x: Math.floor(Math.random() * 3) + 22, // x: 22-24 (правый край)
+                y: Math.floor(Math.random() * 3) + 15  // y: 15-17 (нижняя часть)
+            };
+            
+            // Ставим новую цель
+            setGoal();
+            positionPlayer();
+            positionMonster();
+            
+            // Возобновляем работу монстра
+            levelTransition = false;
+            startMonsterAI();
+            
+            updateUI();
+            showNotification(`🎉 Уровень ${level}! Цель теперь на расстоянии ${8 + (level-1)*2} блоков!`);
+        }
+
+        // Обновить расстояние до цели
+        function updateGoalDistance() {
+            const distance = Math.abs(playerPos.x - goalPos.x) + Math.abs(playerPos.y - goalPos.y);
+            document.getElementById('goal-distance').textContent = distance + ' блоков';
+        }
+
+        // Генерация мира
+        function generateWorld() {
+            const world = document.getElementById('world');
+            world.innerHTML = '';
+
+            for (let i = 0; i < 450; i++) { // 25x18
+                const block = document.createElement('div');
+                block.className = 'block';
+                block.dataset.index = i;
+                
+                const row = Math.floor(i / 25);
+                const col = i % 25;
+                const blockType = getRandomBlockType(row, col);
+                setBlockType(block, blockType);
+                
+                // Инициализируем состояние блока
+                blockStates[i] = {
+                    type: blockType,
+                    damage: 0,
+                    maxHealth: blockStrength[blockType] || 1
+                };
+                
+                block.addEventListener('click', () => handleBlockClick(i, blockType));
+                world.appendChild(block);
+            }
+        }
+
+        // Получить случайный тип блока с учетом позиции
+        function getRandomBlockType(row, col) {
+            const rand = Math.random();
+            
+            // Верхние слои - больше травы и дерева
+            if (row < 3) {
+                if (rand < 0.8) return 'grass';
+                if (rand < 0.95) return 'wood';
+                return 'leaves';
+            }
+            
+            // Средние слои - земля, камень, немного ресурсов
+            if (row < 8) {
+                if (rand < 0.4) return 'dirt';
+                if (rand < 0.7) return 'stone';
+                if (rand < 0.85) return 'wood';
+                if (rand < 0.95) return 'coal';
+                return 'iron';
+            }
+            
+            // Нижние слои - больше ценных ресурсов
+            if (row < 15) {
+                if (rand < 0.2) return 'dirt';
+                if (rand < 0.4) return 'stone';
+                if (rand < 0.6) return 'coal';
+                if (rand < 0.8) return 'iron';
+                if (rand < 0.95) return 'gold';
+                return 'diamond';
+            }
+            
+            // Самые глубокие слои
+            if (rand < 0.1) return 'stone';
+            if (rand < 0.3) return 'coal';
+            if (rand < 0.6) return 'iron';
+            if (rand < 0.85) return 'gold';
+            return 'diamond';
+        }
+
+        // Установить тип блока
+        function setBlockType(block, type) {
+            block.className = `block ${type}`;
+            block.dataset.blockType = type;
+        }
+
+        // Позиционировать игрока
+        function positionPlayer() {
+            const player = document.getElementById('player');
+            const cellWidth = window.innerWidth / 25;
+            const cellHeight = window.innerHeight / 18;
+            
+            player.style.left = (playerPos.x * cellWidth + cellWidth/2 - 15) + 'px';
+            player.style.top = (playerPos.y * cellHeight + cellHeight/2 - 15) + 'px';
+        }
+
+        // Позиционировать монстра
+        function positionMonster() {
+            const monster = document.getElementById('monster');
+            const cellWidth = window.innerWidth / 25;
+            const cellHeight = window.innerHeight / 18;
+            
+            monster.style.left = (monsterPos.x * cellWidth + cellWidth/2 - 17) + 'px';
+            monster.style.top = (monsterPos.y * cellHeight + cellHeight/2 - 17) + 'px';
+        }
+
+        // Переместить игрока
+        function movePlayer(dx, dy) {
+            if (!gameRunning || levelTransition) return;
+            
+            const newX = Math.max(0, Math.min(24, playerPos.x + dx));
+            const newY = Math.max(0, Math.min(17, playerPos.y + dy));
+            
+            const blockIndex = newY * 25 + newX;
+            const blockType = blockStates[blockIndex].type;
+            
+            // Проверяем, можно ли пройти через блок
+            if (blockType === 'grass' || blockStates[blockIndex].damage >= blockStates[blockIndex].maxHealth) {
+                playerPos.x = newX;
+                playerPos.y = newY;
+                positionPlayer();
+                
+                checkPlayerMonsterCollision();
+                checkGoal(); // Проверяем достижение цели
+            }
+        }
+
+        // ИИ монстра
+        function startMonsterAI() {
+            // Очищаем старый интервал
+            if (monsterMoveInterval) {
+                clearInterval(monsterMoveInterval);
+            }
+            
+            monsterMoveInterval = setInterval(() => {
+                if (!gameRunning || levelTransition) return;
+                
+                moveMonsterTowardsPlayer();
+                checkPlayerMonsterCollision();
+                updateMonsterDistance();
+            }, 1500 - level * 100); // Монстр становится быстрее с уровнем
+        }
+
+        // Двигать монстра к игроку
+        function moveMonsterTowardsPlayer() {
+            if (levelTransition) return; // Не двигаем монстра при переходе уровня
+            
+            const dx = playerPos.x - monsterPos.x;
+            const dy = playerPos.y - monsterPos.y;
+            
+            let moveX = 0, moveY = 0;
+            
+            if (Math.abs(dx) > Math.abs(dy)) {
+                moveX = dx > 0 ? 1 : -1;
+            } else {
+                moveY = dy > 0 ? 1 : -1;
+            }
+            
+            const newX = monsterPos.x + moveX;
+            const newY = monsterPos.y + moveY;
+            
+            // Проверяем границы
+            if (newX < 0 || newX > 24 || newY < 0 || newY > 17) return;
+            
+            const blockIndex = newY * 25 + newX;
+            const blockState = blockStates[blockIndex];
+            
+            if (blockState.type === 'grass' || blockState.damage >= blockState.maxHealth) {
+                // Монстр может пройти
+                monsterPos.x = newX;
+                monsterPos.y = newY;
+                positionMonster();
+            } else {
+                // Монстр ломает блок
+                damageBlock(blockIndex);
+            }
+        }
+
+        // Повредить блок
+        function damageBlock(blockIndex) {
+            const blockState = blockStates[blockIndex];
+            blockState.damage++;
+            
+            const block = document.querySelector(`[data-index="${blockIndex}"]`);
+            const damageOverlay = block.querySelector('.block-damage') || createDamageOverlay(block);
+            
+            const damagePercent = blockState.damage / blockState.maxHealth;
+            damageOverlay.style.opacity = damagePercent;
+            
+            if (blockState.damage >= blockState.maxHealth) {
+                // Блок разрушен
+                blockState.type = 'grass';
+                blockState.damage = 0;
+                blockState.maxHealth = 1;
+                setBlockType(block, 'grass');
+                damageOverlay.style.opacity = 0;
+                
+                showNotification(`Монстр разрушил блок!`);
+            }
+        }
+
+        // Создать overlay повреждений
+        function createDamageOverlay(block) {
+            const overlay = document.createElement('div');
+            overlay.className = 'block-damage';
+            block.appendChild(overlay);
+            return overlay;
+        }
+
+        // Проверить столкновение игрока и монстра
+        function checkPlayerMonsterCollision() {
+            const distance = Math.abs(playerPos.x - monsterPos.x) + Math.abs(playerPos.y - monsterPos.y);
+            
+            if (distance <= 1 && !levelTransition) {
+                gameOver();
+                return;
+            }
+            
+            // Показываем опасность если монстр близко
+            const dangerOverlay = document.getElementById('dangerOverlay');
+            if (distance <= 3 && !levelTransition) {
+                dangerOverlay.classList.add('show');
+            } else {
+                dangerOverlay.classList.remove('show');
+            }
+        }
+
+        // Получить урон
+        function takeDamage(damage) {
+            health = Math.max(0, health - damage);
+            updateHealthBar();
+            
+            showNotification(`-${damage} здоровья!`);
+            
+            if (health <= 0) {
+                gameOver();
+            }
+        }
+
+        // Обновить полосу здоровья
+        function updateHealthBar() {
+            const healthFill = document.getElementById('healthFill');
+            healthFill.style.width = health + '%';
+        }
+
+        // Обновить расстояние до монстра
+        function updateMonsterDistance() {
+            const distance = Math.abs(playerPos.x - monsterPos.x) + Math.abs(playerPos.y - monsterPos.y);
+            document.getElementById('monster-distance').textContent = distance + ' блоков';
+        }
+
+        // Игра окончена
+        function gameOver() {
+            gameRunning = false;
+            levelTransition = false;
+            clearInterval(monsterMoveInterval);
+            
+            // Обновляем статистику на экране поражения
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalLevel').textContent = level;
+            document.getElementById('blocksMinedTotal').textContent = blocksMinedCount;
+            
+            // Показываем экран поражения
+            document.getElementById('gameOverScreen').classList.add('show');
+        }
+
+        // Скрыть экран поражения
+        function hideGameOver() {
+            document.getElementById('gameOverScreen').classList.remove('show');
+        }
+
+        // Перезапустить игру из экрана поражения
+        function restartGameFromOver() {
+            hideGameOver();
+            restartGame();
+        }
+
+        // Перезапустить игру
+        function restartGame() {
+            health = 100;
+            score = 0;
+            level = 1;
+            blocksMinedCount = 0;
+            playerPos = { x: 2, y: 8 };
+            
+            // Монстр появляется в правом нижнем углу
+            monsterPos = { x: 23, y: 16 };
+            
+            gameRunning = true;
+            goalReached = false;
+            levelTransition = false;
+            
+            inventory = {
+                grass: 0, dirt: 0, stone: 0, wood: 0,
+                coal: 0, iron: 0, gold: 0, diamond: 0
+            };
+            
+            // Очищаем старый интервал если есть
+            if (monsterMoveInterval) {
+                clearInterval(monsterMoveInterval);
+            }
+            
+            // Скрываем все экраны
+            hideGameOver();
+            document.getElementById('levelCompleteScreen').classList.remove('show');
+            
+            initGame();
+        }
+
+        // Обработка клика по блоку
+        function handleBlockClick(index, blockType) {
+            if (!gameRunning || levelTransition) return;
+            
+            const row = Math.floor(index / 25);
+            const col = index % 25;
+            
+            // Проверяем, достаточно ли близко игрок к блоку
+            const distance = Math.abs(playerPos.x - col) + Math.abs(playerPos.y - row);
+            if (distance > 2) {
+                showNotification('Слишком далеко! Подойдите ближе.');
+                return;
+            }
+            
+            currentPosition = index;
+            
+            if (gameMode === 'mine') {
+                const blockState = blockStates[index];
+                if (blockState.type !== 'grass' && blockState.damage < blockState.maxHealth) {
+                    currentAction = 'mine';
+                    showMathModal(blockState.type);
+                }
+            } else if (gameMode === 'build') {
+                const blockState = blockStates[index];
+                if ((blockState.type === 'grass' || blockState.damage >= blockState.maxHealth) && inventory[selectedBlock] > 0) {
+                    // Мгновенное строительство - без математики!
+                    buildBlock(index, selectedBlock);
+                    updateUI();
+                    showNotification(`Построен: ${getBlockName(selectedBlock)}`);
+                }
+            }
+        }
+
+        // Показать модальное окно с математическим примером
+        function showMathModal(blockType) {
+            // Упрощенная математика - только сложение и вычитание
+            currentMathProblem = generateSimpleMathProblem();
+            
+            document.getElementById('mathQuestion').textContent = currentMathProblem.question;
+            document.getElementById('mathAnswer').value = '';
+            document.getElementById('mathModal').classList.add('show');
+            document.getElementById('mathAnswer').focus();
+        }
+
+        // Генерировать простые математические примеры (только + и -)
+        function generateSimpleMathProblem() {
+            let a, b, operation, answer, question;
+            
+            // Определяем сложность на основе уровня, но ограничиваем максимум
+            const complexity = Math.min(level, 5);
+            
+            if (complexity <= 2) {
+                // Простые примеры: числа от 1 до 20
+                a = Math.floor(Math.random() * 20) + 1;
+                b = Math.floor(Math.random() * 20) + 1;
+            } else if (complexity <= 4) {
+                // Средние примеры: числа от 1 до 50
+                a = Math.floor(Math.random() * 50) + 1;
+                b = Math.floor(Math.random() * 30) + 1;
+            } else {
+                // Сложные примеры: числа от 1 до 100
+                a = Math.floor(Math.random() * 100) + 1;
+                b = Math.floor(Math.random() * 50) + 1;
+            }
+            
+            operation = Math.random() < 0.6 ? '+' : '-'; // Больше сложений
+            
+            if (operation === '+') {
+                answer = a + b;
+                question = `${a} + ${b} = ?`;
+            } else {
+                // При вычитании убеждаемся, что результат положительный
+                if (a < b) [a, b] = [b, a];
+                answer = a - b;
+                question = `${a} - ${b} = ?`;
+            }
+            
+            return { question, answer };
+        }
+
+        // Проверить ответ
+        function checkAnswer() {
+            const answerInput = document.getElementById('mathAnswer');
+            const userAnswerStr = answerInput.value.trim();
+            
+            // Проверяем, что введено число
+            if (userAnswerStr === '' || isNaN(userAnswerStr)) {
+                showNotification('Введите число!');
+                answerInput.focus();
+                return;
+            }
+            
+            const userAnswer = parseInt(userAnswerStr);
+            
+            if (userAnswer === currentMathProblem.answer) {
+                const blockState = blockStates[currentPosition];
+                const blockType = currentAction === 'mine' ? blockState.type : selectedBlock;
+                
+                if (currentAction === 'mine') {
+                    mineBlock(currentPosition);
+                    blocksMinedCount++; // Увеличиваем счетчик добытых блоков
+                } else if (currentAction === 'build') {
+                    buildBlock(currentPosition, selectedBlock);
+                }
+                
+                const pointsEarned = blockDifficulty[blockType] * 10;
+                score += pointsEarned;
+                
+                // Восстанавливаем немного здоровья за правильный ответ
+                health = Math.min(100, health + 2);
+                updateHealthBar();
+                
+                showNotification(`Правильно! +${pointsEarned} очков`);
+            } else {
+                showNotification(`Неправильно! Ответ: ${currentMathProblem.answer}`);
+                // Теряем здоровье за неправильный ответ
+                takeDamage(5);
+            }
+            
+            closeMathModal();
+            updateUI();
+        }
+
+        // Копать блок
+        function mineBlock(index) {
+            const blockState = blockStates[index];
+            const blockType = blockState.type;
+            
+            inventory[blockType]++;
+            
+            // Превращаем блок в траву
+            blockState.type = 'grass';
+            blockState.damage = 0;
+            blockState.maxHealth = 1;
+            
+            const block = document.querySelector(`[data-index="${index}"]`);
+            setBlockType(block, 'grass');
+            
+            // Убираем overlay повреждений если есть
+            const damageOverlay = block.querySelector('.block-damage');
+            if (damageOverlay) {
+                damageOverlay.style.opacity = 0;
+            }
+            
+            showNotification(`Добыт: ${getBlockName(blockType)}`);
+        }
+
+        // Построить блок
+        function buildBlock(index, blockType) {
+            const blockState = blockStates[index];
+            
+            inventory[blockType]--;
+            
+            blockState.type = blockType;
+            blockState.damage = 0;
+            blockState.maxHealth = blockStrength[blockType];
+            
+            const block = document.querySelector(`[data-index="${index}"]`);
+            setBlockType(block, blockType);
+            
+            showNotification(`Построен: ${getBlockName(blockType)}`);
+        }
+
+        // Получить название блока
+        function getBlockName(blockType) {
+            const names = {
+                grass: 'Трава', dirt: 'Земля', stone: 'Камень', 
+                wood: 'Дерево', coal: 'Уголь', iron: 'Железо', 
+                gold: 'Золото', diamond: 'Алмаз', leaves: 'Листва'
+            };
+            return names[blockType] || blockType;
+        }
+
+        // Показать уведомление
+        function showNotification(text) {
+            const notification = document.getElementById('notification');
+            notification.textContent = text;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 2500);
+        }
+
+        // Закрыть модальное окно
+        function closeMathModal() {
+            document.getElementById('mathModal').classList.remove('show');
+        }
+
+        // Установить режим игры
+        function setMode(mode) {
+            gameMode = mode;
+            document.getElementById('current-mode').textContent = 
+                mode === 'mine' ? 'Копание' : 'Строительство';
+            
+            // Обновить кнопки режимов
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // Обновить интерфейс
+        function updateUI() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('level').textContent = level;
+            
+            // Обновить инвентарь
+            Object.keys(inventory).forEach(blockType => {
+                const slot = document.querySelector(`[data-block="${blockType}"]`);
+                if (slot) {
+                    slot.querySelector('.count').textContent = inventory[blockType];
+                }
+            });
+            
+            updateMonsterDistance();
+            updateGoalDistance();
+        }
+
+        // Настроить обработчики событий
+        function setupEventListeners() {
+            // Выбор блока в инвентаре
+            document.querySelectorAll('.inventory-slot').forEach(slot => {
+                slot.addEventListener('click', () => {
+                    document.querySelectorAll('.inventory-slot').forEach(s => 
+                        s.classList.remove('selected'));
+                    slot.classList.add('selected');
+                    selectedBlock = slot.dataset.block;
+                });
+            });
+
+            // Управление WASD
+            document.addEventListener('keydown', (e) => {
+                if (!gameRunning) return;
+                
+                switch(e.key.toLowerCase()) {
+                    case 'w':
+                    case 'ц': // Русская раскладка
+                        e.preventDefault();
+                        movePlayer(0, -1);
+                        break;
+                    case 's':
+                    case 'ы':
+                        e.preventDefault();
+                        movePlayer(0, 1);
+                        break;
+                    case 'a':
+                    case 'ф':
+                        e.preventDefault();
+                        movePlayer(-1, 0);
+                        break;
+                    case 'd':
+                    case 'в':
+                        e.preventDefault();
+                        movePlayer(1, 0);
+                        break;
+                }
+            });
+
+            // Enter в поле ввода ответа
+            document.getElementById('mathAnswer').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+
+            // Закрытие модального окна по ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    closeMathModal();
+                }
+            });
+
+            // Обновление позиций при изменении размера окна
+            window.addEventListener('resize', () => {
+                positionPlayer();
+                positionMonster();
+            });
+        }
+
+        // Запуск игры
+        initGame();
+    </script>
+</body>
+</html>
