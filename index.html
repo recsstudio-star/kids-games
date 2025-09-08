@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Детские игры</title>
+    <!-- VK Bridge -->
+    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -245,6 +247,23 @@
             border-bottom: 35px solid #4ecdc4;
         }
 
+        /* VK Bridge статус */
+        .vk-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            z-index: 1000;
+        }
+
+        .vk-status.connected {
+            background: rgba(76, 175, 80, 0.8);
+        }
+
         @media (max-width: 768px) {
             .title {
                 font-size: 2.5rem;
@@ -261,6 +280,8 @@
     </style>
 </head>
 <body>
+    <div class="vk-status" id="vkStatus">VK Bridge: подключение...</div>
+
     <div class="floating-shapes">
         <div class="shape star"></div>
         <div class="shape circle"></div>
@@ -321,7 +342,7 @@
         <!-- Игры для 5-6 лет -->
         <div class="games-container" id="age5Games">
             <div class="games-grid">
-		<div class="game-card" onclick="openGame('paint_by_numbers_html.html')">
+                <div class="game-card" onclick="openGame('paint_by_numbers_html.html')">
                     <span class="game-icon">🎨</span>
                     <div class="game-title">Картина по номерам</div>
                 </div>
@@ -356,15 +377,15 @@
                     <span class="game-icon">➕</span>
                     <div class="game-title">Сложение дробей</div>
                 </div>
-		<div class="game-card" onclick="openGame('sudoku.html?size=3&mode=numbers')">
+                <div class="game-card" onclick="openGame('sudoku.html?size=3&mode=numbers')">
                     <span class="game-icon">🧩</span>
                     <div class="game-title">Судоку</div>
                 </div>
-		<div class="game-card" onclick="openGame('math_minesweeper_interactive_html.html')">
+                <div class="game-card" onclick="openGame('math_minesweeper_interactive_html.html')">
                     <span class="game-icon">💣</span>
                     <div class="game-title">Сапер</div>
                 </div>
-		<div class="game-card" onclick="openGame('math_minecraft.html')">
+                <div class="game-card" onclick="openGame('math_minecraft.html')">
                     <span class="game-icon">🌐</span>
                     <div class="game-title">Майнкрафт</div>
                 </div>
@@ -374,7 +395,80 @@
     </div>
 
     <script>
+        // VK Bridge инициализация
+        let vkBridge = null;
+        let isVKEnvironment = false;
+
+        // Проверяем, загружен ли VK Bridge
+        if (typeof window.vkBridge !== 'undefined') {
+            vkBridge = window.vkBridge;
+        } else if (typeof window.VKWebAppInit !== 'undefined') {
+            // Альтернативный способ для старых версий
+            vkBridge = window;
+        }
+
+        // Функция инициализации VK Bridge
+        async function initVKBridge() {
+            const statusEl = document.getElementById('vkStatus');
+            
+            try {
+                if (vkBridge) {
+                    // Инициализируем VK Bridge
+                    await vkBridge.send('VKWebAppInit');
+                    isVKEnvironment = true;
+                    
+                    statusEl.textContent = 'VK Bridge: подключен';
+                    statusEl.classList.add('connected');
+                    
+                    // Получаем информацию о пользователе (опционально)
+                    try {
+                        const userInfo = await vkBridge.send('VKWebAppGetUserInfo');
+                        console.log('User info:', userInfo);
+                    } catch (e) {
+                        console.log('Cannot get user info:', e);
+                    }
+
+                    // Настраиваем цветовую схему приложения
+                    try {
+                        await vkBridge.send('VKWebAppSetViewSettings', {
+                            status_bar_style: 'light',
+                            action_bar_color: '#667eea'
+                        });
+                    } catch (e) {
+                        console.log('Cannot set view settings:', e);
+                    }
+
+                } else {
+                    throw new Error('VK Bridge не найден');
+                }
+            } catch (error) {
+                console.error('VK Bridge initialization error:', error);
+                statusEl.textContent = 'VK Bridge: ошибка';
+                statusEl.style.background = 'rgba(244, 67, 54, 0.8)';
+                
+                // Скрываем статус через 3 секунды если не в VK
+                setTimeout(() => {
+                    statusEl.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Функция для отправки события в VK
+        function sendVKEvent(event, params = {}) {
+            if (vkBridge && isVKEnvironment) {
+                try {
+                    vkBridge.send(event, params);
+                } catch (e) {
+                    console.error('VK Bridge event error:', e);
+                }
+            }
+        }
+
+        // Основные функции игры
         function showGames(ageGroup) {
+            // Отправляем событие в VK
+            sendVKEvent('VKWebAppTapticNotificationOccurred', { type: 'impact', style: 'light' });
+            
             // Скрыть выбор возраста
             document.getElementById('ageSelection').style.display = 'none';
             
@@ -384,9 +478,18 @@
             
             // Показать игры для выбранного возраста
             document.getElementById(ageGroup + 'Games').style.display = 'block';
+
+            // Отправляем событие просмотра раздела
+            sendVKEvent('VKWebAppRetargetingPixel', {
+                pixel_code: 'age_group_selected',
+                params: { age_group: ageGroup }
+            });
         }
 
         function showAgeSelection() {
+            // Тактильный отклик
+            sendVKEvent('VKWebAppTapticNotificationOccurred', { type: 'impact', style: 'light' });
+            
             // Скрыть все игры
             const gameContainers = document.querySelectorAll('.games-container');
             gameContainers.forEach(container => container.style.display = 'none');
@@ -396,20 +499,96 @@
         }
 
         function openGame(gameFile) {
+            // Тактильный отклик при запуске игры
+            sendVKEvent('VKWebAppTapticNotificationOccurred', { type: 'impact', style: 'medium' });
+            
+            // Отправляем событие запуска игры
+            sendVKEvent('VKWebAppRetargetingPixel', {
+                pixel_code: 'game_started',
+                params: { game_file: gameFile }
+            });
+
             // Открыть игру в том же окне
             window.location.href = gameFile;
         }
 
-        // Добавим звуковые эффекты при наведении (если браузер поддерживает)
+        // Обработка событий от VK Bridge
+        if (vkBridge) {
+            vkBridge.subscribe((e) => {
+                console.log('VK Bridge event:', e);
+                
+                switch (e.detail.type) {
+                    case 'VKWebAppUpdateConfig':
+                        // Обновилась конфигурация приложения
+                        const scheme = e.detail.data.scheme;
+                        document.body.setAttribute('scheme', scheme);
+                        break;
+                    
+                    case 'VKWebAppViewRestore':
+                        // Пользователь вернулся в приложение
+                        console.log('App restored');
+                        break;
+                        
+                    case 'VKWebAppViewHide':
+                        // Приложение скрыто
+                        console.log('App hidden');
+                        break;
+                }
+            });
+        }
+
+        // Инициализация при загрузке страницы
+        window.addEventListener('load', () => {
+            initVKBridge();
+        });
+
+        // Добавляем анимации при наведении
         document.querySelectorAll('.age-card, .game-card').forEach(card => {
             card.addEventListener('mouseenter', () => {
-                // Простая анимация при наведении
+                // Легкий тактильный отклик при наведении (только в VK)
+                if (isVKEnvironment) {
+                    sendVKEvent('VKWebAppTapticSelectionChanged');
+                }
+                
                 card.style.transform = card.classList.contains('age-card') ? 
                     'translateY(-10px) scale(1.02)' : 'translateY(-5px)';
             });
             
             card.addEventListener('mouseleave', () => {
                 card.style.transform = 'translateY(0)';
+            });
+        });
+
+        // Обработка кнопки "Назад" браузера
+        window.addEventListener('popstate', (event) => {
+            // Если показаны игры, вернемся к выбору возраста
+            const gameContainers = document.querySelectorAll('.games-container');
+            let isGameShown = false;
+            
+            gameContainers.forEach(container => {
+                if (container.style.display === 'block') {
+                    isGameShown = true;
+                }
+            });
+            
+            if (isGameShown) {
+                showAgeSelection();
+            }
+        });
+
+        // Добавляем состояние в историю браузера при выборе возраста
+        function showGamesWithHistory(ageGroup) {
+            history.pushState({ ageGroup: ageGroup }, '', `#${ageGroup}`);
+            showGames(ageGroup);
+        }
+
+        // Заменяем onclick в HTML на новую функцию (это можно сделать через addEventListener)
+        document.addEventListener('DOMContentLoaded', () => {
+            // Получаем все карточки возрастов и переопределяем их обработчики
+            const ageCards = document.querySelectorAll('.age-card');
+            ageCards.forEach((card, index) => {
+                const ageGroups = ['age4', 'age5', 'age7'];
+                card.onclick = () => showGamesWithHistory(ageGroups[index]);
             });
         });
     </script>
