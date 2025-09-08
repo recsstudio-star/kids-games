@@ -540,6 +540,33 @@
         // Инициализация при загрузке страницы
         window.addEventListener('load', () => {
             initVKBridge();
+            
+            // Обновляем высоту окна после полной загрузки
+            setTimeout(() => {
+                updateVKWindowHeight();
+            }, 500);
+        });
+
+        // Обновляем высоту при изменении размера окна
+        window.addEventListener('resize', () => {
+            setTimeout(() => {
+                updateVKWindowHeight();
+            }, 100);
+        });
+
+        // Дополнительное обновление высоты при динамических изменениях DOM
+        const observer = new MutationObserver(() => {
+            setTimeout(() => {
+                updateVKWindowHeight();
+            }, 100);
+        });
+
+        // Наблюдаем за изменениями в DOM
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['style', 'class']
         });
 
         // Добавляем анимации при наведении
